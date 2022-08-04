@@ -1,5 +1,5 @@
 <!-- Set the title of the page -->
-<title>HTML 3D</title>
+<title>Spinning Cube</title>
 
 <!-- Import the HTML 3D -->
 <script src="../html3d.js"></script>
@@ -11,15 +11,26 @@
 
 <!-- Add your own script -->
 <script type="module">
+    // Wait HTML3D to get ready
     await html3d.promise;
+
+    // Find your HTML3D scene by its id
     const myScene = html3d.findById("hello");
+
+    // Find your first element that has mesh tag
     const mesh = myScene.findObjectByTag("mesh");
+
+    // Add an event that will be run after every tick
     myScene.on("render.after", () => {
+
+        // Rotate the mesh
         mesh.rotation.x += 0.01;
         mesh.rotation.y += 0.01;
+
     });
 </script>
 
+<!-- Add your own style -->
 <style>
     html3d {
         position: absolute;
