@@ -209,7 +209,7 @@ setInterval(() => {
         const children = Array.from(element.children);
         for (let i = 0; i < children.length; i++) {
             const child = children[i];
-            if (child.tagName === "path") {
+            if (child.tagName === "PATH") {
                 const path = child.getAttribute("d").toString();
                 const segments = path.split(" ");
                 let curSymbol = null;
@@ -217,18 +217,31 @@ setInterval(() => {
                     if (curSymbol) {
                         switch (curSymbol) {
                             case "M":
+                            case "MOVE":
+                            case "MV":
                                 shape.moveTo(...w);
                                 break;
                             case "L":
+                            case "LINE":
+                            case "LN":
                                 shape.lineTo(...w);
                                 break;
                             case "Q":
+                            case "QUADRATIC":
+                            case "QD":
+                            case "QC":
                                 shape.quadraticCurveTo(...w);
                                 break;
                             case "C":
+                            case "B":
+                            case "BC":
+                            case "BEZIER":
+                            case "BZ":
                                 shape.bezierCurveTo(...w);
                                 break;
                             case "Z":
+                            case "CLOSE":
+                            case "CL":
                                 shape.closePath();
                                 break;
                         }
@@ -238,10 +251,10 @@ setInterval(() => {
                 const w = [];
                 for (let j = 0; j < segments.length; j++) {
                     const segment = segments[j];
-                    if ([..."MLQCZ"].includes(segment[0])) {
+                    if ([..."MLQCZB", "MOVE", "MV", "LINE", "LN", "QUADRATIC", "QD", "QC", "BEZIER", "BZ", "CLOSE", "CL"].includes(segment[0])) {
                         processCurSymbol();
                         curSymbol = segment[0];
-                    } else w.push(segment);
+                    } else w.push(numberCheck(segment, 0));
                 }
                 processCurSymbol();
             }
@@ -337,8 +350,8 @@ setInterval(() => {
                                 geometry.__html3d = element2;
                                 break;
                             case "SHAPE-GEOMETRY":
-                                const shapes = Array.from(element2.children).filter(i => i.tagName === "SHAPE").map(processShape);
-                                geometry = new THREE.ShapeGeometry(shapes, numberCheck(attr3("curve-segments"), 12));
+                                const shape = processShape(Array.from(element2.children).filter(i => i.tagName === "SHAPE").reverse()[0]);
+                                geometry = new THREE.ShapeGeometry(shape, numberCheck(attr3("curve-segments"), 12));
                                 geometry.__html3d = element2;
                                 break;
                             case "BASIC-MATERIAL":
@@ -353,14 +366,9 @@ setInterval(() => {
                                 if (stringCheck(attr3("wireframeLinejoin"), ["round", "bevel", "miter"])) basicMaterialOptions.wireframeLinejoin = attr3("wireframeLinejoin");
                                 if (numberCheck(attr3("wireframeLinewidth"))) basicMaterialOptions.wireframeLinewidth = numberCheck(attr3("wireframeLinewidth"));
                                 if (numberCheck(attr3("opacity"))) basicMaterialOptions.opacity = numberCheck(attr3("opacity"));
-                                const sides = {
-                                    front: THREE.FrontSide,
-                                    back: THREE.BackSide,
-                                    double: THREE.DoubleSide,
-                                };
-                                if (sides[attr3("shadowSide")] || Object.keys(sides).includes(attr3("shadowSide").toLowerCase())) basicMaterialOptions.shadowSide = sides[attr3("shadowSide")] || attr3("shadowSide");
-                                if (sides[attr3("side")] || Object.keys(sides).includes(attr3("side").toLowerCase())) basicMaterialOptions.side = sides[attr3("side")] || attr3("side");
-
+                                const sides = {front: THREE.FrontSide, back: THREE.BackSide, double: THREE.DoubleSide,};
+                                if (sides[attr3("shadowSide")] || Object.keys(sides).includes((attr3("shadow-side") || "").toLowerCase())) basicMaterialOptions.shadowSide = sides[attr3("shadowSide")] || attr3("shadowSide");
+                                if (sides[attr3("side")] || Object.keys(sides).includes((attr3("side") || "").toLowerCase())) basicMaterialOptions.side = sides[attr3("side")] || attr3("side");
                                 material = new THREE.MeshBasicMaterial(basicMaterialOptions);
                                 material.__html3d = element2;
                                 break;
