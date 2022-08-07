@@ -203,16 +203,24 @@ setInterval(() => {
     };
     await loadPromise;
     const els = document.querySelectorAll("html3d");
-    try {
-        await THREE;
-    } catch (e) {
-        console.info("Couldn't find THREE.js, trying to load it...");
+    const loadScript = src => new Promise(l => {
         const script = document.createElement("script");
-        script.src = "https://threejs.org/build/three.min.js";
+        script.src = src;
+        script.onload = l;
         document.head.appendChild(script);
-        await new Promise(resolve => script.onload = resolve);
-        console.info("THREE.js has been loaded.");
-    }
+    });
+    const loadLibrary = async (fn, name, src) => {
+        try {
+            if (!(await fn())) { // noinspection ExceptionCaughtLocallyJS
+                throw new Error();
+            }
+        } catch (e) {
+            console.info("%cCouldn't find " + name + ", trying to load it...", "color:#ff0000");
+            await loadScript(src);
+            console.info("%c" + name + " has been loaded.", "color:#00ff00");
+        }
+    };
+    await loadLibrary(_ => THREE, "ThreeJS", "https://threejs.org/build/three.min.js");
     const {Scene, PerspectiveCamera, WebGLRenderer} = THREE;
     const sides = {front: THREE.FrontSide, back: THREE.BackSide, double: THREE.DoubleSide};
     const numberCheck = (a, b) => {
@@ -220,16 +228,18 @@ setInterval(() => {
         if (!a) return b;
         a = a.replaceAll("pi", Math.PI);
         try {
+            // noinspection JSUnusedLocalSymbols
             const {
                 sin, cos, tan, asin, acos, atan, atan2, sqrt, pow, abs, log, log2, log10, exp, min, max,
-                floor, ceil, round, sign
+                floor, ceil, round, sign, PI, LN2, E, cosh, cbrt, imul, sinh, LN10, acosh, tanh, asinh, atanh,
+                hypot, clz32, expm1, fround, log1p, LOG2E, LOG10E, random, SQRT1_2, SQRT2, trunc
             } = Math;
             if ([..."+-*/^()"].some(i => a.includes(i))) a = eval(a).toString();
         } catch (e) {
         }
         return isNaN(a * 1) ? b : a * 1;
     }
-    const boolCheck = (a, b) => a ? a === "true" : b;
+    const boolCheck = (a, b) => a !== null ? a !== "false" : b;
     const stringCheck = (a, b, c) => !b || b.includes(a) ? a : c;
     const colorCheck = (a, b) => {
         if (/^#[0-9a-f]{6}$/i.test(a)) return numberCheck(a.replace("#", "0x"), b);
@@ -463,21 +473,23 @@ setInterval(() => {
                                 geometry = new THREE.ShapeGeometry(shape, numberCheck(attr3("curve-segments"), 12));
                                 geometry.__html3d = element2;
                                 break;
-                            case "SPHERE-GEOMETRY":
+                            case "SPHERE-GEOMETRY":                                 // radius... kinda sus
                                 geometry = new THREE.SphereGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("width-segments"), 32), numberCheck(attr3("height-segments"), 16), numberCheck(attr3("phi-start"), 0), numberCheck(attr3("phi-length"), Math.PI * 2), numberCheck(attr3("theta-start"), 0), numberCheck(attr3("theta-length"), 2 * Math.PI));
                                 geometry.__html3d = element2;
                                 break;
                             case "MESH-BASIC-MATERIAL":
                                 const meshBasicMaterialOptions = {};
-                                if (colorCheck(attr3("color"))) meshBasicMaterialOptions.color = colorCheck(attr3("color"));
-                                if (numberCheck(attr3("combine"))) meshBasicMaterialOptions.combine = numberCheck(attr3("combine"));
-                                if (boolCheck(attr3("fog"))) meshBasicMaterialOptions.fog = boolCheck(attr3("fog"));
-                                if (numberCheck(attr3("reflectivity"))) meshBasicMaterialOptions.reflectivity = numberCheck(attr3("reflectivity"));
-                                if (numberCheck(attr3("refraction-ratio"))) meshBasicMaterialOptions.refractionRatio = numberCheck(attr3("refraction-ratio"));
-                                if (boolCheck(attr3("wireframe"))) meshBasicMaterialOptions.wireframe = attr3("wireframe") === true;
-                                if (stringCheck(attr3("wireframe-line-cap"), ["round", "butt", "square"])) meshBasicMaterialOptions.wireframeLinecap = attr3("wireframe-line-cap");
-                                if (stringCheck(attr3("wireframe-line-join"), ["round", "bevel", "miter"])) meshBasicMaterialOptions.wireframeLinejoin = attr3("wireframe-line-join");
-                                if (numberCheck(attr3("wireframe-line-width"))) meshBasicMaterialOptions.wireframeLinewidth = numberCheck(attr3("wireframe-line-width"));
+                                processAttributes(meshBasicMaterialOptions, attr3, [
+                                    [colorCheck, "color", "color"],
+                                    [numberCheck, "combine", "combine"],
+                                    [boolCheck, "fog", "fog"],
+                                    [numberCheck, "reflectivity", "reflectivity"],
+                                    [numberCheck, "refraction-ratio", "refractionRatio"],
+                                    [boolCheck, "wireframe", "wireframe"],
+                                    [stringCheck, "wireframe-line-cap", "wireframeLinecap", ["round", "butt", "square"]],
+                                    [stringCheck, "wireframe-line-join", "wireframeLinejoin", ["round", "bevel", "miter"]],
+                                    [numberCheck, "wireframe-line-width", "wireframeLinewidth"]
+                                ]);
                                 processMaterialAttributes(meshBasicMaterialOptions, attr3);
                                 material = new THREE.MeshBasicMaterial(meshBasicMaterialOptions);
                                 material.__html3d = element2;
@@ -528,22 +540,55 @@ setInterval(() => {
                     processObject3DAttributes(pointLight, attr2);
                     if (boolCheck(attr2("register"), true)) scene.add(pointLight);
                     break;
+                case "ORBIT-CONTROLS":
+                    await loadLibrary(_ => THREE.OrbitControls, "OrbitControls", "https://threejs.org/examples/js/controls/OrbitControls.js");
+                    const orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+                    processAttributes(orbitControls, attr2, [
+                        [boolCheck, "auto-rotate", "autoRotate"],
+                        [numberCheck, "auto-rotate-speed", "autoRotateSpeed"],
+                        [numberCheck, "damping-factor", "dampingFactor"],
+                        [boolCheck, "enabled", "enabled"],
+                        [boolCheck, "enable-damping", "enableDamping"],
+                        [boolCheck, "enable-pan", "enablePan"],
+                        [boolCheck, "enable-rotate", "enableRotate"],
+                        [boolCheck, "enable-zoom", "enableZoom"],
+                        [numberCheck, "key-pan-speed", "keyPanSpeed"],
+                        [numberCheck, "max-azimuth-angle", "maxAzimuthAngle"],
+                        [numberCheck, "max-distance", "maxDistance"],
+                        [numberCheck, "max-polar-angle", "maxPolarAngle"],
+                        [numberCheck, "max-zoom", "maxZoom"],
+                        [numberCheck, "min-azimuth-angle", "minAzimuthAngle"],
+                        [numberCheck, "min-distance", "minDistance"],
+                        [numberCheck, "min-polar-angle", "minPolarAngle"],
+                        [numberCheck, "min-zoom", "minZoom"],
+                        [numberCheck, "pan-speed", "panSpeed"],
+                        [numberCheck, "rotate-speed", "rotateSpeed"],
+                        [boolCheck, "screen-space-panning", "screenSpacePanning"],
+                    ]);
+                    ["left", "right", "up", "bottom"].forEach(i => {
+                        if (attr2("key-" + i)) orbitControls.keys[i.toUpperCase()] = attr2("key-" + i.toUpperCase());
+                    });
+                    const mouseActions = {
+                        ROTATE: THREE.MOUSE.ROTATE,
+                        rotate: THREE.MOUSE.ROTATE,
+                        PAN: THREE.MOUSE.PAN,
+                        pan: THREE.MOUSE.PAN,
+                        DOLLY: THREE.MOUSE.DOLLY,
+                        dolly: THREE.MOUSE.DOLLY
+                    };
+                    ["left", "right", "middle"].forEach(i => {
+                        if (mouseActions[attr2("mouse-" + i)]) orbitControls.mouseButtons[i] = mouseActions[attr2("mouse-" + i)];
+                    });
+                    ["one", "two"].forEach(i => {
+                        if (mouseActions[attr2("touch-" + i)]) orbitControls.touches[i] = mouseActions[attr2("touch-" + i)];
+                    });
+                    break;
             }
         }
-        html3ds.push(new HTML3D(el, scene, camera, renderer));
+        const h3d = new HTML3D(el, scene, camera, renderer);
+        html3ds.push(h3d);
+        if (boolCheck(attr("maximize"))) h3d.maximize();
     }
     pr();
     renderAll();
 })();
-
-/**
- * TODO:
- const lights = [];
- lights[ 0 ] = new PointLight( 0xffffff, 1, 0 );
- lights[ 1 ] = new PointLight( 0xffffff, 1, 0 );
- lights[ 2 ] = new PointLight( 0xffffff, 1, 0 );
-
- lights[ 0 ].position.set( 0, 200, 0 );
- lights[ 1 ].position.set( 100, 200, 100 );
- lights[ 2 ].position.set( - 100, - 200, - 100 );
- */

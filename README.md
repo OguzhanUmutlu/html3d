@@ -6,3 +6,5 @@
 [Spinning cube](https://oguzhanumutlu.github.io/html3d/examples/cube.html)
 
 [Spinning heart](https://oguzhanumutlu.github.io/html3d/examples/heart.html)
+
+[Perfect sphere](https://oguzhanumutlu.github.io/html3d/examples/sphere.html)

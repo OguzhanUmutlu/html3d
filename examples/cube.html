@@ -5,7 +5,7 @@
 <script src="../html3d.js"></script>
 
 <!-- Create the base scene -->
-<html3d z="5" id="hello">
+<html3d z="5" id="hello" maximize>
 
     <!-- Add a mesh, by default it will have a box geometry -->
     <mesh>
@@ -20,6 +20,9 @@
     <point-light x="100" y="200" z="100"></point-light>
     <point-light x="-100" y="-200" z="-100"></point-light>
 
+    <!-- Move camera with your keys and mouse through scene -->
+    <orbit-controls></orbit-controls>
+
 </html3d>
 
 <!-- Add your own script -->
@@ -29,9 +32,6 @@
 
     // Find your HTML3D scene by its id
     const myScene = html3d.findById("hello");
-
-    // Maximize your scene's size
-    myScene.maximize();
 
     // Find your first element that has mesh tag
     const mesh = myScene.findObjectByTag("mesh");
