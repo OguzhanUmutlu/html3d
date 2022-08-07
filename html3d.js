@@ -379,7 +379,12 @@ setInterval(() => {
             [boolCheck, "transparent", "transparent"],
             [boolCheck, "visible", "visible"],
         ]);
-    }
+    };
+    const processBufferGeometryAttributes = (obj, attr) => {
+        processAttributes(obj, attr, [
+            [boolCheck, "morph-attributes", "morphAttributes"]
+        ]);
+    };
     for (let i = 0; i < els.length; i++) {
         const el = els[i];
         const canvas = document.createElement("canvas");
@@ -475,6 +480,11 @@ setInterval(() => {
                                 break;
                             case "SPHERE-GEOMETRY":                                 // radius... kinda sus
                                 geometry = new THREE.SphereGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("width-segments"), 32), numberCheck(attr3("height-segments"), 16), numberCheck(attr3("phi-start"), 0), numberCheck(attr3("phi-length"), Math.PI * 2), numberCheck(attr3("theta-start"), 0), numberCheck(attr3("theta-length"), 2 * Math.PI));
+                                geometry.__html3d = element2;
+                                break;
+                            case "TETRAHEDRON-GEOMETRY":
+                                geometry = new THREE.TetrahedronGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("detail"), 0));
+                                processBufferGeometryAttributes(geometry, attr3);
                                 geometry.__html3d = element2;
                                 break;
                             case "MESH-BASIC-MATERIAL":

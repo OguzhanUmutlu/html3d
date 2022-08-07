@@ -1,9 +1,9 @@
 <title>Spinning Heart</title>
 <script src="../html3d.js"></script>
-<html3d z="35" id="hello">
+<html3d z="35" id="hello" maximize style="position: absolute; left: 0; top: 0">
     <mesh rotation-x="pi" y="10">
         <shape-geometry>
-            <shape curve-segments="1">
+            <shape>
                 <path d="MOVE 5 5"></path>
                 <path d="BEZIER 5 5 4 0 0 0"></path>
                 <path d="BEZIER -6 0 -6 7 -6 7"></path>
@@ -25,11 +25,3 @@
         mesh.rotation.y += 0.01;
     });
 </script>
-<style>
-    html3d {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-    }
-</style>
