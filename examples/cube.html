@@ -6,7 +6,20 @@
 
 <!-- Create the base scene -->
 <html3d z="5" id="hello">
-    <mesh></mesh>
+
+    <!-- Add a mesh, by default it will have a box geometry -->
+    <mesh>
+
+        <!-- Add a Mesh Phong Material which will allow lights to make it look cooler -->
+        <mesh-phong-material color="0x156289" emissive="0x072534" side="double"></mesh-phong-material>
+
+    </mesh>
+
+    <!-- Add some lights to make it look better -->
+    <point-light y="200"></point-light>
+    <point-light x="100" y="200" z="100"></point-light>
+    <point-light x="-100" y="-200" z="-100"></point-light>
+
 </html3d>
 
 <!-- Add your own script -->
@@ -16,6 +29,9 @@
 
     // Find your HTML3D scene by its id
     const myScene = html3d.findById("hello");
+
+    // Maximize your scene's size
+    myScene.maximize();
 
     // Find your first element that has mesh tag
     const mesh = myScene.findObjectByTag("mesh");
@@ -34,8 +50,7 @@
 <style>
     html3d {
         position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
+        left: 0;
+        top: 0;
     }
 </style>

@@ -40,6 +40,8 @@ setInterval(() => {
             this.rendering = true;
             this._f = [];
             this._listeners = {};
+            this.maximized = false;
+            this._lastMaximize = null;
         };
 
         render() {
@@ -61,6 +63,34 @@ setInterval(() => {
 
         get objects() {
             return this.scene.children;
+        };
+
+        maximize() {
+            if (!this.maximized) this._lastMaximize = [this.canvas.width, this.canvas.height];
+            this.maximized = true;
+            this.onResize();
+        };
+
+        unmaximize() {
+            this.maximized = false;
+            if (this._lastMaximize) {
+                this.canvas.width = this._lastMaximize[0];
+                this.canvas.height = this._lastMaximize[1];
+            }
+            this._lastMaximize = null;
+            this.onResize();
+        };
+
+        onResize() {
+            this.emit("resize");
+            if (this.maximized) {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+            const {width, height} = this.canvas;
+            this.camera.aspect = width / height;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(width, height);
         };
 
         findById(id) {
@@ -157,6 +187,8 @@ setInterval(() => {
         };
     }
 
+    addEventListener("resize", () => html3ds.forEach(html3d => html3d.onResize()));
+
     const renderAll = () => {
         for (let i = 0; i < html3ds.length; i++) if (html3ds[i].rendering) html3ds[i].render();
         requestAnimationFrame(renderAll);
@@ -182,6 +214,7 @@ setInterval(() => {
         console.info("THREE.js has been loaded.");
     }
     const {Scene, PerspectiveCamera, WebGLRenderer} = THREE;
+    const sides = {front: THREE.FrontSide, back: THREE.BackSide, double: THREE.DoubleSide};
     const numberCheck = (a, b) => {
         if (typeof a === "number") return a;
         if (!a) return b;
@@ -197,13 +230,29 @@ setInterval(() => {
         return isNaN(a * 1) ? b : a * 1;
     }
     const boolCheck = (a, b) => a ? a === "true" : b;
-    const stringCheck = (a, b = [], c) => b.includes(a) ? a : c;
+    const stringCheck = (a, b, c) => !b || b.includes(a) ? a : c;
     const colorCheck = (a, b) => {
         if (/^#[0-9a-f]{6}$/i.test(a)) return numberCheck(a.replace("#", "0x"), b);
         if (/^#[0-9a-f]{3}$/i.test(a)) return numberCheck("0x" + a.replace("#", "") + a.replace("#", ""), b);
         if (/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/.test(a)) return numberCheck("0x" + a.substring(4).split("").reverse().slice(1).reverse().join("").split(",").map(i => (i.trimStart().trimEnd() * 1 || 0).toString(16)).join(""), b);
         return numberCheck(a, b);
     };
+    const vectorCheck = (a, b) => {
+        if (a.some(i => !numberCheck(i))) return b;
+        a = a.map(numberCheck);
+        if (a.length === 2) return new THREE.Vector2(...a);
+        if (a.length === 3) return new THREE.Vector3(...a);
+        if (a.length === 4) return new THREE.Vector4(...a);
+        return b;
+    };
+    const jsonCheck = (a, b) => {
+        try {
+            return JSON.parse(a);
+        } catch (e) {
+            return b;
+        }
+    };
+    const sideCheck = (a, b) => sides[a] || b;
     const processShape = element => {
         const shape = new THREE.Shape();
         const children = Array.from(element.children);
@@ -254,13 +303,73 @@ setInterval(() => {
                     if ([..."MLQCZB", "MOVE", "MV", "LINE", "LN", "QUADRATIC", "QD", "QC", "BEZIER", "BZ", "CLOSE", "CL"].includes(segment[0])) {
                         processCurSymbol();
                         curSymbol = segment[0];
-                    } else w.push(numberCheck(segment, 0));
+                    } else if (segment) w.push(numberCheck(segment, 0));
                 }
                 processCurSymbol();
             }
         }
         return shape;
     };
+    const processAttributes = (obj, attr, list) => {
+        for (let i = 0; i < list.length; i++) {
+            const at = list[i];
+            const res = at[0](attr(at[1]), ...at.slice(3));
+            if (res) obj[at[2]] = res;
+        }
+    };
+    const processObject3DAttributes = (obj, attr) => {
+        obj.position.x = numberCheck(attr("x"), 0);
+        obj.position.y = numberCheck(attr("y"), 0);
+        obj.position.z = numberCheck(attr("z"), 0);
+        obj.rotation.x = numberCheck(attr("rotation-x"), 0);
+        obj.rotation.y = numberCheck(attr("rotation-y"), 0);
+        obj.rotation.z = numberCheck(attr("rotation-z"), 0);
+        obj.scale.x = numberCheck(attr("scale-x"), 1);
+        obj.scale.y = numberCheck(attr("scale-y"), 1);
+        obj.scale.z = numberCheck(attr("scale-z"), 1);
+        obj.castShadow = boolCheck(attr("cast-shadow"), false);
+        obj.visible = boolCheck(attr("visible"), true);
+        if (vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")])) obj.lookAt(vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")]));
+    };
+    const processMaterialAttributes = (obj, attr) => {
+        processAttributes(obj, attr, [
+            [numberCheck, "alpha-test", "alphaTest"],
+            [numberCheck, "alpha-to-coverage", "alphaToCoverage"],
+            [numberCheck, "blend-dst", "blendDst"],
+            [numberCheck, "blend-dst-alpha", "blendDstAlpha"],
+            [numberCheck, "blend-equation", "blendEquation"],
+            [numberCheck, "blend-equation-alpha", "blendEquationAlpha"],
+            [numberCheck, "blend-src", "blendSrc"],
+            [numberCheck, "blend-src-alpha", "blendSrcAlpha"],
+            [boolCheck, "clip-intersection", "clipIntersection"],
+            [boolCheck, "clip-shadows", "clipShadows"],
+            [boolCheck, "color-write", "colorWrite"],
+            [jsonCheck, "defines", "defines"],
+            [numberCheck, "depth-func", "depthFunc"],
+            [boolCheck, "depth-test", "depthTest"],
+            [boolCheck, "depth-write", "depthWrite"],
+            [boolCheck, "stencil-write", "stencilWrite"],
+            [numberCheck, "stencil-write-mask", "stencilWriteMask"],
+            [numberCheck, "stencil-func", "stencilFunc"],
+            [numberCheck, "stencil-ref", "stencilRef"],
+            [numberCheck, "stencil-func-mask", "stencilFuncMask"],
+            [numberCheck, "stencil-fail", "stencilFail"],
+            [numberCheck, "stencil-z-fail", "stencilZFail"],
+            [stringCheck, "name", "name"],
+            [numberCheck, "opacity", "opacity"],
+            [boolCheck, "polygon-offset", "polygonOffset"],
+            [numberCheck, "polygon-offset-factor", "polygonOffsetFactor"],
+            [numberCheck, "polygon-offset-units", "polygonOffsetUnits"],
+            [stringCheck, "precision", "precision", ["highp", "mediump", "lowp"]],
+            [boolCheck, "premultiplied-alpha", "premultipliedAlpha"],
+            [boolCheck, "dithering", "dithering"],
+            [sideCheck, "shadow-side", "shadowSide"],
+            [sideCheck, "side", "side"],
+            [boolCheck, "tone-mapped", "toneMapped"],
+            [boolCheck, "transparent", "transparent"],
+            [boolCheck, "visible", "visible"],
+        ]);
+    }
     for (let i = 0; i < els.length; i++) {
         const el = els[i];
         const canvas = document.createElement("canvas");
@@ -290,7 +399,7 @@ setInterval(() => {
         camera.rotation.y = numberCheck(attr("rotation-y"), 0);
         camera.rotation.z = numberCheck(attr("rotation-z"), 0);
         if (colorCheck(attr("background-color"))) renderer.setClearColor(colorCheck(attr("background-color")));
-        if (attr("look-at")) camera.lookAt(new THREE.Vector3(...attr("look-at").split(",").map(r => r * 1)));
+        if (vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")])) camera.lookAt(vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")]));
         for (let i = 0; i < elements.length; i++) {
             const element = elements[i];
             const attr2 = r => element.getAttribute(r);
@@ -354,41 +463,70 @@ setInterval(() => {
                                 geometry = new THREE.ShapeGeometry(shape, numberCheck(attr3("curve-segments"), 12));
                                 geometry.__html3d = element2;
                                 break;
-                            case "BASIC-MATERIAL":
-                                const basicMaterialOptions = {};
-                                if (colorCheck(attr3("color"))) basicMaterialOptions.color = colorCheck(attr3("color"));
-                                if (numberCheck(attr3("combine"))) basicMaterialOptions.combine = numberCheck(attr3("combine"));
-                                if (attr3("fog")) basicMaterialOptions.fog = attr3("fog") === true;
-                                if (numberCheck(attr3("reflectivity"))) basicMaterialOptions.reflectivity = numberCheck(attr3("reflectivity"));
-                                if (numberCheck(attr3("refractionRatio"))) basicMaterialOptions.refractionRatio = numberCheck(attr3("refractionRatio"));
-                                if (boolCheck(attr3("wireframe"))) basicMaterialOptions.wireframe = attr3("wireframe") === true;
-                                if (stringCheck(attr3("wireframeLinecap"), ["round", "butt", "square"])) basicMaterialOptions.wireframeLinecap = attr3("wireframeLinecap");
-                                if (stringCheck(attr3("wireframeLinejoin"), ["round", "bevel", "miter"])) basicMaterialOptions.wireframeLinejoin = attr3("wireframeLinejoin");
-                                if (numberCheck(attr3("wireframeLinewidth"))) basicMaterialOptions.wireframeLinewidth = numberCheck(attr3("wireframeLinewidth"));
-                                if (numberCheck(attr3("opacity"))) basicMaterialOptions.opacity = numberCheck(attr3("opacity"));
-                                const sides = {front: THREE.FrontSide, back: THREE.BackSide, double: THREE.DoubleSide,};
-                                if (sides[attr3("shadowSide")] || Object.keys(sides).includes((attr3("shadow-side") || "").toLowerCase())) basicMaterialOptions.shadowSide = sides[attr3("shadowSide")] || attr3("shadowSide");
-                                if (sides[attr3("side")] || Object.keys(sides).includes((attr3("side") || "").toLowerCase())) basicMaterialOptions.side = sides[attr3("side")] || attr3("side");
-                                material = new THREE.MeshBasicMaterial(basicMaterialOptions);
+                            case "SPHERE-GEOMETRY":
+                                geometry = new THREE.SphereGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("width-segments"), 32), numberCheck(attr3("height-segments"), 16), numberCheck(attr3("phi-start"), 0), numberCheck(attr3("phi-length"), Math.PI * 2), numberCheck(attr3("theta-start"), 0), numberCheck(attr3("theta-length"), 2 * Math.PI));
+                                geometry.__html3d = element2;
+                                break;
+                            case "MESH-BASIC-MATERIAL":
+                                const meshBasicMaterialOptions = {};
+                                if (colorCheck(attr3("color"))) meshBasicMaterialOptions.color = colorCheck(attr3("color"));
+                                if (numberCheck(attr3("combine"))) meshBasicMaterialOptions.combine = numberCheck(attr3("combine"));
+                                if (boolCheck(attr3("fog"))) meshBasicMaterialOptions.fog = boolCheck(attr3("fog"));
+                                if (numberCheck(attr3("reflectivity"))) meshBasicMaterialOptions.reflectivity = numberCheck(attr3("reflectivity"));
+                                if (numberCheck(attr3("refraction-ratio"))) meshBasicMaterialOptions.refractionRatio = numberCheck(attr3("refraction-ratio"));
+                                if (boolCheck(attr3("wireframe"))) meshBasicMaterialOptions.wireframe = attr3("wireframe") === true;
+                                if (stringCheck(attr3("wireframe-line-cap"), ["round", "butt", "square"])) meshBasicMaterialOptions.wireframeLinecap = attr3("wireframe-line-cap");
+                                if (stringCheck(attr3("wireframe-line-join"), ["round", "bevel", "miter"])) meshBasicMaterialOptions.wireframeLinejoin = attr3("wireframe-line-join");
+                                if (numberCheck(attr3("wireframe-line-width"))) meshBasicMaterialOptions.wireframeLinewidth = numberCheck(attr3("wireframe-line-width"));
+                                processMaterialAttributes(meshBasicMaterialOptions, attr3);
+                                material = new THREE.MeshBasicMaterial(meshBasicMaterialOptions);
+                                material.__html3d = element2;
+                                break;
+                            case "MESH-PHONG-MATERIAL":
+                                const meshPhongMaterialOptions = {};
+                                if (vectorCheck([attr3("normal-scale-x"), attr3("normal-scale-y")])) meshPhongMaterialOptions.normalScale = vectorCheck([attr3("normal-scale-x"), attr3("normal-scale-y")]);
+                                processAttributes(meshPhongMaterialOptions, attr3, [
+                                    [numberCheck, "ao-map-intensity", "aoMapIntensity"],
+                                    [numberCheck, "bump-scale", "bumpScale"],
+                                    [colorCheck, "color", "color"],
+                                    [numberCheck, "combine", "combine"],
+                                    [numberCheck, "displacement-scale", "displacementScale"],
+                                    [numberCheck, "displacement-bias", "displacementBias"],
+                                    [colorCheck, "emissive", "emissive"],
+                                    [numberCheck, "emissive-intensity", "emissiveIntensity"],
+                                    [numberCheck, "flat-shading", "flatShading"],
+                                    [boolCheck, "fog", "fog"],
+                                    [numberCheck, "light-map-intensity", "lightMapIntensity"],
+                                    [numberCheck, "normal-map-type", "normalMapType"],
+                                    [numberCheck, "reflectivity", "reflectivity"],
+                                    [numberCheck, "refraction-ratio", "refractionRatio"],
+                                    [numberCheck, "shininess", "shininess"],
+                                    [colorCheck, "specular", "specular"],
+                                    [boolCheck, "wireframe", "wireframe"],
+                                    [stringCheck, "wireframe-line-cap", "wireframeLinecap"],
+                                    [stringCheck, "wireframe-line-join", "wireframeLinejoin"],
+                                    [numberCheck, "wireframe-line-width", "wireframeLinewidth"]
+                                ]);
+                                processMaterialAttributes(meshPhongMaterialOptions, attr3);
+                                material = new THREE.MeshPhongMaterial(meshPhongMaterialOptions);
                                 material.__html3d = element2;
                                 break;
                         }
                     }
                     const cube = new THREE.Mesh(geometry, material);
                     cube.__html3d = element;
-                    cube.position.x = numberCheck(attr2("x"), 0);
-                    cube.position.y = numberCheck(attr2("y"), 0);
-                    cube.position.z = numberCheck(attr2("z"), 0);
-                    cube.rotation.x = numberCheck(attr2("rotation-x"), 0);
-                    cube.rotation.y = numberCheck(attr2("rotation-y"), 0);
-                    cube.rotation.z = numberCheck(attr2("rotation-z"), 0);
-                    cube.scale.x = numberCheck(attr2("scale-x"), 1);
-                    cube.scale.y = numberCheck(attr2("scale-y"), 1);
-                    cube.scale.z = numberCheck(attr2("scale-z"), 1);
-                    cube.castShadow = boolCheck(attr2("cast-shadow"), false);
-                    cube.visible = boolCheck(attr2("visible"), true);
-                    if (attr2("look-at")) cube.lookAt(new THREE.Vector3(...attr2("look-at").split(",").map(r => r * 1)));
+                    processObject3DAttributes(cube, attr2);
                     if (boolCheck(attr2("register"), true)) scene.add(cube);
+                    break;
+                case "POINT-LIGHT":
+                    const pointLight = new THREE.PointLight(colorCheck(attr2("color"), 0xffffff), numberCheck(attr2("intensity"), 1), numberCheck(attr2("distance"), 0), numberCheck(attr2("decay"), 1));
+                    pointLight.__html3d = element;
+                    processAttributes(pointLight, attr2, [
+                        [numberCheck, "power", "power"],
+                        [colorCheck, "color", "color"]
+                    ]);
+                    processObject3DAttributes(pointLight, attr2);
+                    if (boolCheck(attr2("register"), true)) scene.add(pointLight);
                     break;
             }
         }
@@ -397,3 +535,15 @@ setInterval(() => {
     pr();
     renderAll();
 })();
+
+/**
+ * TODO:
+ const lights = [];
+ lights[ 0 ] = new PointLight( 0xffffff, 1, 0 );
+ lights[ 1 ] = new PointLight( 0xffffff, 1, 0 );
+ lights[ 2 ] = new PointLight( 0xffffff, 1, 0 );
+
+ lights[ 0 ].position.set( 0, 200, 0 );
+ lights[ 1 ].position.set( 100, 200, 100 );
+ lights[ 2 ].position.set( - 100, - 200, - 100 );
+ */
