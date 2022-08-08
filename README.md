@@ -27,7 +27,7 @@
 - [ ] Orthographic camera
 - [ ] Stereo camera
 
-## Geometries 12/25
+## Geometries 18/25
 
 - [X] Box geometry
 - [X] Capsule geometry
@@ -111,7 +111,7 @@
 - [ ] CSS 3D renderer
 - [ ] SVG renderer
 
-## Loaders 0/14
+## Loaders 1/14
 
 - [ ] 3DM loader
 - [ ] DRACO loader
