@@ -53,7 +53,7 @@
 - [X] Convex geometry
 - [ ] Decal geometry
 - [ ] Parametric geometry
-- [ ] Text geometry
+- [X] Text geometry
 
 ## Materials 2/17
 

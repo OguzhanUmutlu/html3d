@@ -52,6 +52,7 @@ setInterval(() => {
             this.renderer.render(this.scene, this.camera);
             this._f.push(Date.now() + 1000);
             this._f = this._f.filter(f => f > Date.now());
+            this.emit("render.after");
         };
 
         get canvas() {
@@ -428,8 +429,6 @@ setInterval(() => {
             depth: boolCheck(attr("depth"), true),
             logarithmicDepthBuffer: boolCheck(attr("logarithmicDepthBuffer"), false),
         });
-        camera.rotation.set(numberCheck(attr("rotation-x"), 0), numberCheck(attr("rotation-y"), 0), numberCheck(attr("rotation-z"), 0));
-        camera.position.set(numberCheck(attr("x", 0)), numberCheck(attr("y"), 0), numberCheck(attr("z"), 0));
         const elements = Array.from(el.children);
         if (colorCheck(attr("background-color"))) renderer.setClearColor(colorCheck(attr("background-color")));
         if (vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")])) camera.lookAt(vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")]));
@@ -687,7 +686,10 @@ setInterval(() => {
         }
         camera.rotation.set(numberCheck(attr("rotation-x"), 0), numberCheck(attr("rotation-y"), 0), numberCheck(attr("rotation-z"), 0));
         camera.position.set(numberCheck(attr("x", 0)), numberCheck(attr("y"), 0), numberCheck(attr("z"), 0));
-        h3d.orbitControls.forEach(i => i.update());
+        h3d.orbitControls.forEach(i => {
+            i.target.x = camera.position.x;
+            i.target.y = camera.position.y;
+        });
         html3ds.push(h3d);
         if (boolCheck(attr("maximize"))) h3d.maximize();
     }
