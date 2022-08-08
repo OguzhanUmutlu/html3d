@@ -359,6 +359,55 @@ setInterval(() => {
             if (res) obj[at[2]] = res;
         }
     };
+    const processBehavior = (obj, behavior, h3d) => {
+        if (!behavior) return;
+        let actions = [];
+        const variables = {
+            x: "obj.position.x",
+            y: "obj.position.y",
+            z: "obj.position.z",
+            rx: "obj.rotation.x",
+            ry: "obj.rotation.y",
+            rz: "obj.rotation.z",
+            sx: "obj.scale.x",
+            sy: "obj.scale.y",
+            sz: "obj.scale.z",
+        };
+        const lines = behavior.split(";");
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line) {
+                if (!/^\s*\w+\s*((\*\*)|\||&|[+\-*/])?\s*=\s*.+$/.test(line)) {
+                    console.error(`[BEHAVIOR] Invalid behavior at line ${i + 1}: ${line}`);
+                } else {
+                    const equal = line.indexOf("=");
+                    const varName = line.substring(0, equal - 1).trim();
+                    const action = line.substring(varName.length, equal + 1).trim();
+                    const varValue = line.substring(equal + 1).trim();
+                    if (!variables[varName]) return console.error(`[BEHAVIOR] Couldn't find the variable named ${varName} at line ${i + 1}: ${line}\nNote: Variables: ${Object.keys(variables).join()}`);
+                    actions.push([varName, action, varValue, i, line]);
+                }
+            }
+        }
+        h3d.on("render.before", obj._behaviorFunc = () => {
+            actions.forEach(action => {
+                try {
+                    // noinspection JSUnusedLocalSymbols
+                    const {
+                        sin, cos, tan, asin, acos, atan, atan2, sqrt, pow, abs, log, log2, log10, exp, min, max,
+                        floor, ceil, round, sign, PI, LN2, E, cosh, cbrt, imul, sinh, LN10, acosh, tanh, asinh, atanh,
+                        hypot, clz32, expm1, fround, log1p, LOG2E, LOG10E, random, SQRT1_2, SQRT2, trunc
+                    } = Math;
+                    // noinspection JSUnusedLocalSymbols
+                    const pi = PI;
+                    eval(variables[action[0]] + action[1] + action[2]);
+                } catch (e) {
+                    actions = actions.filter(a => a !== action);
+                    return console.error(`[BEHAVIOR] Couldn't parse the value at line ${action[3] + 1}: ${action[2]}`);
+                }
+            });
+        });
+    };
     const processObject3DAttributes = (obj, attr) => {
         obj.position.x = numberCheck(attr("x"), 0);
         obj.position.y = numberCheck(attr("y"), 0);
@@ -626,6 +675,7 @@ setInterval(() => {
                         }
                     }
                     const cube = new THREE.Mesh(geometry, material);
+                    processBehavior(cube, attr2("behavior"), h3d);
                     cube.__html3d = element;
                     processObject3DAttributes(cube, attr2);
                     if (boolCheck(attr2("register"), true)) scene.add(cube);
@@ -799,8 +849,15 @@ setInterval(() => {
             i.target.x = camera.position.x;
             i.target.y = camera.position.y;
         });
+        h3d.arcballControls.forEach(i => i.update());
         html3ds.push(h3d);
         if (boolCheck(attr("maximize"))) h3d.maximize();
+        if (boolCheck(attr("center"))) {
+            h3d.element.style.position = "absolute";
+            h3d.element.style.left = "50%";
+            h3d.element.style.top = "50%";
+            h3d.element.style.transform = "translate(-50%, -50%)";
+        }
     }
     pr();
     renderAll();

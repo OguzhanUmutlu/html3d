@@ -1,7 +1,7 @@
 <title>Spinning Heart</title>
 <script src="../html3d.js"></script>
-<html3d id="hello" maximize style="position: absolute; left: 0; top: 0" z="35">
-    <mesh rotation-x="pi" y="10">
+<html3d id="hello" maximize center>
+    <mesh rotation-x="pi" y="10" behavior="ry += 0.01">
         <shape-geometry>
             <shape>
                 <path d="MOVE 5 5"></path>
@@ -15,13 +15,5 @@
         </shape-geometry>
         <mesh-basic-material side="double"></mesh-basic-material>
     </mesh>
-    <arcball-controls></arcball-controls>
+    <trackball-controls></trackball-controls>
 </html3d>
-<script type="module">
-    await html3d.promise;
-    const myScene = html3d.findById("hello");
-    const mesh = myScene.findObjectByTag("mesh");
-    myScene.on("render.after", () => {
-        mesh.rotation.y += 0.01;
-    });
-</script>

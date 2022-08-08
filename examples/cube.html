@@ -5,52 +5,26 @@
 <script src="../html3d.js"></script>
 
 <!-- Create the base scene -->
-<html3d id="hello" maximize z="5">
+<html3d maximize center z="5">
 
     <!-- Add a mesh, by default it will have a box geometry -->
-    <mesh>
+    <!-- Behavior will be run before every render -->
+    <!-- rx represents rotation x and ry represents rotation y and this behavior adds 0.01 to them before every render -->
+    <mesh behavior="rx += 0.01; ry += 0.01">
 
         <!-- Add a Mesh Phong Material which will allow lights to make it look cooler -->
-        <mesh-phong-material color="0x156289" emissive="0x072534" side="double"></mesh-phong-material>
+        <mesh-phong-material color="#156289" emissive="#072534" side="double"></mesh-phong-material>
 
     </mesh>
 
     <!-- Add some lights to make it look better -->
     <point-light y="200"></point-light>
+
     <point-light x="100" y="200" z="100"></point-light>
+
     <point-light x="-100" y="-200" z="-100"></point-light>
 
     <!-- Move camera with your keys and mouse through scene -->
-    <arcball-controls></arcball-controls>
+    <trackball-controls></trackball-controls>
 
 </html3d>
-
-<!-- Add your own script -->
-<script type="module">
-    // Wait HTML3D to get ready
-    await html3d.promise;
-
-    // Find your HTML3D scene by its id
-    const myScene = html3d.findById("hello");
-
-    // Find your first element that has mesh tag
-    const mesh = myScene.findObjectByTag("mesh");
-
-    // Add an event that will be run after every rendering
-    myScene.on("render.after", () => {
-
-        // Rotate the mesh
-        mesh.rotation.x += 0.01;
-        mesh.rotation.y += 0.01;
-
-    });
-</script>
-
-<!-- Add your own style -->
-<style>
-    html3d {
-        position: absolute;
-        left: 0;
-        top: 0;
-    }
-</style>
