@@ -40,15 +40,16 @@ setInterval(() => {
             this.rendering = true;
             this._f = [];
             this._listeners = {};
+            this.fonts = [];
             this.maximized = false;
             this._lastMaximize = null;
+            this.orbitControls = [];
         };
 
         render() {
             this.emit("render");
             this.emit("render.before");
             this.renderer.render(this.scene, this.camera);
-            this.emit("render.after");
             this._f.push(Date.now() + 1000);
             this._f = this._f.filter(f => f > Date.now());
         };
@@ -199,7 +200,10 @@ setInterval(() => {
     const promise = new Promise(l => pr = l);
     window.html3d = {
         promise,
-        findById: (id) => html3ds.find(r => r.element.id === id)
+        findById: (id) => html3ds.find(r => r.element.id === id),
+        warnings: window.html3d?.warnings || {
+            loadStart: false, loadEnd: true
+        }
     };
     await loadPromise;
     const els = document.querySelectorAll("html3d");
@@ -215,9 +219,9 @@ setInterval(() => {
                 throw new Error();
             }
         } catch (e) {
-            console.info("%cCouldn't find " + name + ", trying to load it...", "color:#ff0000");
+            if (html3d.warnings.loadStart) console.info("%cCouldn't find " + name + ", trying to load it...", "color:#ff0000");
             await loadScript(src);
-            console.info("%c" + name + " has been loaded.", "color:#00ff00");
+            if (html3d.warnings.loadEnd) console.info("%c" + name + " has been loaded.", "color:#00ff00");
         }
     };
     await loadLibrary(_ => THREE, "ThreeJS", "https://threejs.org/build/three.min.js");
@@ -258,6 +262,13 @@ setInterval(() => {
     const jsonCheck = (a, b) => {
         try {
             return JSON.parse(a);
+        } catch (e) {
+            return b;
+        }
+    };
+    const codeCheck = (a, b) => {
+        try {
+            return eval(a);
         } catch (e) {
             return b;
         }
@@ -319,6 +330,16 @@ setInterval(() => {
             }
         }
         return shape;
+    };
+    const processCurve = element => {
+        return new (class extends THREE.Curve {
+            getPoint(t, optionalTarget = new THREE.Vector3()) {
+                const attr = r => element ? element.getAttribute(r) : null;
+                const tx = t * 3 - 1.5;
+                const ty = Math.sin(2 * Math.PI * t);
+                return optionalTarget.set(numberCheck(attr("tx"), tx), numberCheck(attr("ty"), ty), numberCheck(attr("tz"), 0)).multiplyScalar(numberCheck(attr("scalar"), 5));
+            };
+        })();
     };
     const processAttributes = (obj, attr, list) => {
         for (let i = 0; i < list.length; i++) {
@@ -385,6 +406,7 @@ setInterval(() => {
             [boolCheck, "morph-attributes", "morphAttributes"]
         ]);
     };
+    let fontLoader;
     for (let i = 0; i < els.length; i++) {
         const el = els[i];
         const canvas = document.createElement("canvas");
@@ -406,15 +428,12 @@ setInterval(() => {
             depth: boolCheck(attr("depth"), true),
             logarithmicDepthBuffer: boolCheck(attr("logarithmicDepthBuffer"), false),
         });
+        camera.rotation.set(numberCheck(attr("rotation-x"), 0), numberCheck(attr("rotation-y"), 0), numberCheck(attr("rotation-z"), 0));
+        camera.position.set(numberCheck(attr("x", 0)), numberCheck(attr("y"), 0), numberCheck(attr("z"), 0));
         const elements = Array.from(el.children);
-        camera.position.x = numberCheck(attr("x"), 0);
-        camera.position.y = numberCheck(attr("y"), 0);
-        camera.position.z = numberCheck(attr("z"), 0);
-        camera.rotation.x = numberCheck(attr("rotation-x"), 0);
-        camera.rotation.y = numberCheck(attr("rotation-y"), 0);
-        camera.rotation.z = numberCheck(attr("rotation-z"), 0);
         if (colorCheck(attr("background-color"))) renderer.setClearColor(colorCheck(attr("background-color")));
         if (vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")])) camera.lookAt(vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")]));
+        const h3d = new HTML3D(el, scene, camera, renderer);
         for (let i = 0; i < elements.length; i++) {
             const element = elements[i];
             const attr2 = r => element.getAttribute(r);
@@ -475,6 +494,7 @@ setInterval(() => {
                                 break;
                             case "SHAPE-GEOMETRY":
                                 const shape = processShape(Array.from(element2.children).filter(i => i.tagName === "SHAPE").reverse()[0]);
+                                if (!shape) continue;
                                 geometry = new THREE.ShapeGeometry(shape, numberCheck(attr3("curve-segments"), 12));
                                 geometry.__html3d = element2;
                                 break;
@@ -484,6 +504,59 @@ setInterval(() => {
                                 break;
                             case "TETRAHEDRON-GEOMETRY":
                                 geometry = new THREE.TetrahedronGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("detail"), 0));
+                                processBufferGeometryAttributes(geometry, attr3);
+                                geometry.__html3d = element2;
+                                break;
+                            case "TORUS-GEOMETRY":
+                                geometry = new THREE.TorusGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("tube"), 0.4), numberCheck(attr3("radial-segments"), 8), numberCheck(attr3("tubular-segments"), 6), numberCheck(attr3("arc"), Math.PI * 2));
+                                processBufferGeometryAttributes(geometry, attr3);
+                                geometry.__html3d = element2;
+                                break;
+                            case "TORUS-KNOT-GEOMETRY":
+                                geometry = new THREE.TorusKnotGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("tube"), 0.4), numberCheck(attr3("tubular-segments"), 64), numberCheck(attr3("radial-segments"), 8), numberCheck(attr3("p"), 2), numberCheck(attr3("q"), 3));
+                                processBufferGeometryAttributes(geometry, attr3);
+                                geometry.__html3d = element2;
+                                break;
+                            case "TUBE-GEOMETRY":
+                                const curve = processCurve(Array.from(element2.children).filter(i => i.tagName === "CURVE").reverse()[0]);
+                                if (!curve) continue;
+                                geometry = new THREE.TubeGeometry(curve, numberCheck(attr3("tubular-segments"), 64), numberCheck(attr3("radius"), 1), numberCheck(attr3("radial-segments"), 8), boolCheck(attr3("closed"), false));
+                                processBufferGeometryAttributes(geometry, attr3);
+                                geometry.__html3d = element2;
+                                break;
+                            case "CONVEX-GEOMETRY":
+                                // TODO: an example
+                                await loadLibrary(_ => THREE.ConvexHull, "ConvexHull", "https://threejs.org/examples/js/math/ConvexHull.js");
+                                await loadLibrary(_ => THREE.ConvexGeometry, "ConvexGeometry", "https://threejs.org/examples/js/geometries/ConvexGeometry.js");
+                                const points1 = Array.from(element2.children).filter(i => i.tagName === "POINT").map(i => new THREE.Vector3(numberCheck(i.getAttribute("x"), 0), numberCheck(i.getAttribute("y"), 0), numberCheck(i.getAttribute("z"), 0)));
+                                geometry = new THREE.ConvexGeometry(points1);
+                                processBufferGeometryAttributes(geometry, attr3);
+                                geometry.__html3d = element2;
+                                break;
+                            /*case "PARAMETRIC-GEOMETRY":
+                                geometry = new THREE.ParametricGeometry(codeCheck(attr3("func"), ), );
+                                processBufferGeometryAttributes(geometry, attr3);
+                                geometry.__html3d = element2;
+                                break;*/
+                            case "TEXT-GEOMETRY":
+                                await loadLibrary(_ => !THREE.TextGeometry.toString().includes("console.error"), "TextGeometry", "https://threejs.org/examples/js/geometries/TextGeometry.js");
+                                const font = h3d.fonts.find(i => [i.name, i.src].includes(stringCheck(attr3("font")))) || h3d.fonts.find(i => i.familyName === stringCheck(attr3("font")));
+                                if (!font) {
+                                    console.warn("Font not found: " + stringCheck(attr3("font")));
+                                    continue;
+                                }
+                                element2.style.display = "none";
+                                geometry = new THREE.TextGeometry(stringCheck(element2.innerText, ""), {
+                                    font: font.font,
+                                    size: numberCheck(attr3("size"), 100),
+                                    height: numberCheck(attr3("height"), 50),
+                                    curveSegments: numberCheck(attr3("curve-segments"), 12),
+                                    bevelEnabled: boolCheck(attr3("bevel"), false),
+                                    bevelThickness: numberCheck(attr3("bevel-thickness"), 10),
+                                    bevelSize: numberCheck(attr3("bevel-size"), 8),
+                                    bevelOffset: numberCheck(attr3("bevel-offset"), 0),
+                                    bevelSegments: numberCheck(attr3("bevel-segments"), 3)
+                                });
                                 processBufferGeometryAttributes(geometry, attr3);
                                 geometry.__html3d = element2;
                                 break;
@@ -592,10 +665,29 @@ setInterval(() => {
                     ["one", "two"].forEach(i => {
                         if (mouseActions[attr2("touch-" + i)]) orbitControls.touches[i] = mouseActions[attr2("touch-" + i)];
                     });
+                    orbitControls.__html3d = element;
+                    h3d.orbitControls.push(orbitControls);
+                    break;
+                case "FONT":
+                    if (!fontLoader) {
+                        await loadLibrary(_ => THREE.FontLoader.prototype.load, "FontLoader", "https://threejs.org/examples/js/loaders/FontLoader.js")
+                        fontLoader = new THREE.FontLoader();
+                    }
+                    const font = await new Promise(r => fontLoader.load(attr2("src"), r, _ => _, _ => r(null)));
+                    if (!font) {
+                        console.error("Failed to load font: " + attr2("src"));
+                        continue;
+                    }
+                    font.__html3d = element;
+                    h3d.fonts.push({
+                        src: attr2("src"), name: attr2("name"), familyName: font.data.familyName, font
+                    });
                     break;
             }
         }
-        const h3d = new HTML3D(el, scene, camera, renderer);
+        camera.rotation.set(numberCheck(attr("rotation-x"), 0), numberCheck(attr("rotation-y"), 0), numberCheck(attr("rotation-z"), 0));
+        camera.position.set(numberCheck(attr("x", 0)), numberCheck(attr("y"), 0), numberCheck(attr("z"), 0));
+        h3d.orbitControls.forEach(i => i.update());
         html3ds.push(h3d);
         if (boolCheck(attr("maximize"))) h3d.maximize();
     }

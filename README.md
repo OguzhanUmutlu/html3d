@@ -46,11 +46,11 @@
 - [X] Shape geometry
 - [X] Sphere geometry
 - [X] Tetrahedron geometry
-- [ ] Torus geometry
-- [ ] Torus Knot geometry
-- [ ] Tube geometry
+- [X] Torus geometry
+- [X] Torus Knot geometry
+- [X] Tube geometry
 - [ ] Wireframe geometry
-- [ ] Convex geometry
+- [X] Convex geometry
 - [ ] Decal geometry
 - [ ] Parametric geometry
 - [ ] Text geometry
@@ -115,7 +115,7 @@
 
 - [ ] 3DM loader
 - [ ] DRACO loader
-- [ ] Font loader
+- [X] Font loader
 - [ ] GLTF loader
 - [ ] KTX2 loader
 - [ ] LDraw loader
