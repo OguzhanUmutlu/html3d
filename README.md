@@ -92,15 +92,15 @@
 - [ ] Fog
 - [ ] FogExp2
 
-## Controllers 1/8
+## Controllers 6/8
 
-- [ ] Arc ball controls
+- [X] Arc ball controls
 - [ ] Drag controls
-- [ ] First person controls
-- [ ] Fly controls
+- [X] First person controls
+- [X] Fly controls
 - [X] Orbit controls
-- [ ] Pointer lock controls
-- [ ] Trackball controls
+- [X] Pointer lock controls
+- [X] Trackball controls
 - [ ] Transform controls
 
 ## Renderers 1/5
@@ -127,3 +127,7 @@
 - [ ] PRWM loader
 - [ ] SVG loader
 - [ ] TGA loader
+
+## Miscellaneous 0/1
+
+- [ ] Groups

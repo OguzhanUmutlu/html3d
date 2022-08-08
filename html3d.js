@@ -44,11 +44,20 @@ setInterval(() => {
             this.maximized = false;
             this._lastMaximize = null;
             this.orbitControls = [];
+            this.arcballControls = [];
+            this.flyControls = [];
+            this.firstPersonControls = [];
+            this.pointerLockControls = [];
+            this.trackballControls = [];
         };
 
         render() {
             this.emit("render");
             this.emit("render.before");
+            this.orbitControls.forEach(c => c.update());
+            this.flyControls.forEach(c => c.update(c._clock.getDelta()));
+            this.firstPersonControls.forEach(c => c.update(c._clock.getDelta()));
+            this.trackballControls.forEach(c => c.update());
             this.renderer.render(this.scene, this.camera);
             this._f.push(Date.now() + 1000);
             this._f = this._f.filter(f => f > Date.now());
@@ -93,6 +102,7 @@ setInterval(() => {
             this.camera.aspect = width / height;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(width, height);
+            this.trackballControls.forEach(c => c.update());
         };
 
         findById(id) {
@@ -433,6 +443,14 @@ setInterval(() => {
         if (colorCheck(attr("background-color"))) renderer.setClearColor(colorCheck(attr("background-color")));
         if (vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")])) camera.lookAt(vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")]));
         const h3d = new HTML3D(el, scene, camera, renderer);
+        const mouseActions = {
+            ROTATE: THREE.MOUSE.ROTATE,
+            rotate: THREE.MOUSE.ROTATE,
+            PAN: THREE.MOUSE.PAN,
+            pan: THREE.MOUSE.PAN,
+            DOLLY: THREE.MOUSE.DOLLY,
+            dolly: THREE.MOUSE.DOLLY
+        };
         for (let i = 0; i < elements.length; i++) {
             const element = elements[i];
             const attr2 = r => element.getAttribute(r);
@@ -650,22 +668,113 @@ setInterval(() => {
                     ["left", "right", "up", "bottom"].forEach(i => {
                         if (attr2("key-" + i)) orbitControls.keys[i.toUpperCase()] = attr2("key-" + i.toUpperCase());
                     });
-                    const mouseActions = {
-                        ROTATE: THREE.MOUSE.ROTATE,
-                        rotate: THREE.MOUSE.ROTATE,
-                        PAN: THREE.MOUSE.PAN,
-                        pan: THREE.MOUSE.PAN,
-                        DOLLY: THREE.MOUSE.DOLLY,
-                        dolly: THREE.MOUSE.DOLLY
-                    };
                     ["left", "right", "middle"].forEach(i => {
-                        if (mouseActions[attr2("mouse-" + i)]) orbitControls.mouseButtons[i] = mouseActions[attr2("mouse-" + i)];
+                        if (mouseActions[attr2("mouse-" + i)]) orbitControls.mouseButtons[i.toUpperCase()] = mouseActions[attr2("mouse-" + i)];
                     });
                     ["one", "two"].forEach(i => {
-                        if (mouseActions[attr2("touch-" + i)]) orbitControls.touches[i] = mouseActions[attr2("touch-" + i)];
+                        if (mouseActions[attr2("touch-" + i)]) orbitControls.touches[i.toUpperCase()] = mouseActions[attr2("touch-" + i)];
                     });
                     orbitControls.__html3d = element;
                     h3d.orbitControls.push(orbitControls);
+                    break;
+                case "ARCBALL-CONTROLS":
+                    await loadLibrary(_ => THREE.ArcballControls, "ArcballControls", "https://threejs.org/examples/js/controls/ArcballControls.js");
+                    const arcballControls = new THREE.ArcballControls(camera, renderer.domElement);
+                    processAttributes(arcballControls, attr2, [
+                        [boolCheck, "adjust-near-far", "adjustNearFar"],
+                        [boolCheck, "cursor-zoom", "cursorZoom"],
+                        [numberCheck, "damping-factor", "dampingFactor"],
+                        [boolCheck, "enabled", "enabled"],
+                        [boolCheck, "enable-animations", "enableAnimations"],
+                        [boolCheck, "enable-grid", "enableGrid"],
+                        [boolCheck, "enable-pan", "enablePan"],
+                        [boolCheck, "enable-rotate", "enableRotate"],
+                        [boolCheck, "enable-zoom", "enableZoom"],
+                        [numberCheck, "focus-animation-time", "focusAnimationTime"],
+                        [numberCheck, "max-distance", "maxDistance"],
+                        [numberCheck, "max-zoom", "maxZoom"],
+                        [numberCheck, "min-distance", "minDistance"],
+                        [numberCheck, "min-zoom", "minZoom"],
+                        [numberCheck, "scale-factor", "scaleFactor"],
+                        [numberCheck, "w-max", "wMax"],
+                        [numberCheck, "radius-factor", "radiusFactor"],
+                    ]);
+                    arcballControls.__html3d = element;
+                    h3d.arcballControls.push(arcballControls);
+                    break;
+                case "FLY-CONTROLS":
+                    await loadLibrary(_ => THREE.FlyControls, "FlyControls", "https://threejs.org/examples/js/controls/FlyControls.js");
+                    const flyControls = new THREE.FlyControls(camera, renderer.domElement);
+                    processAttributes(flyControls, attr2, [
+                        [boolCheck, "auto-forward", "autoForward"],
+                        [boolCheck, "drag-to-look", "dragToLook"],
+                        [numberCheck, "movement-speed", "movementSpeed"],
+                        [numberCheck, "roll-speed", "rollSpeed"],
+                    ]);
+                    flyControls._clock = new THREE.Clock();
+                    flyControls.__html3d = element;
+                    h3d.flyControls.push(flyControls);
+                    break;
+                case "FIRST-PERSON-CONTROLS":
+                    await loadLibrary(_ => THREE.FirstPersonControls, "FirstPersonControls", "https://threejs.org/examples/js/controls/FirstPersonControls.js");
+                    const firstPersonControls = new THREE.FirstPersonControls(camera, renderer.domElement);
+                    processAttributes(firstPersonControls, attr2, [
+                        [boolCheck, "active-look", "activeLook"],
+                        [boolCheck, "auto-forward", "autoForward"],
+                        [boolCheck, "constrain-vertical", "constrainVertical"],
+                        [boolCheck, "enabled", "enabled"],
+                        [numberCheck, "height-coef", "heightCoef"],
+                        [numberCheck, "height-max", "heightMax"],
+                        [numberCheck, "height-min", "heightMin"],
+                        [numberCheck, "height-speed", "heightSpeed"],
+                        [boolCheck, "look-vertical", "lookVertical"],
+                        [numberCheck, "look-speed", "lookSpeed"],
+                        [boolCheck, "mouse-drag-on", "mouseDragOn"],
+                        [numberCheck, "movement-speed", "movementSpeed"],
+                        [numberCheck, "vertical-max", "verticalMax"],
+                        [numberCheck, "vertical-min", "verticalMin"],
+                    ]);
+                    firstPersonControls._clock = new THREE.Clock();
+                    firstPersonControls.__html3d = element;
+                    h3d.firstPersonControls.push(firstPersonControls);
+                    break;
+                case "POINTER-LOCK-CONTROLS":
+                    await loadLibrary(_ => THREE.PointerLockControls, "PointerLockControls", "https://threejs.org/examples/js/controls/PointerLockControls.js");
+                    const pointerLockControls = new THREE.PointerLockControls(camera, renderer.domElement);
+                    processAttributes(pointerLockControls, attr2, [
+                        [numberCheck, "max-polar-angle", "maxPolarAngle"],
+                        [numberCheck, "min-polar-angle", "minPolarAngle"],
+                        [numberCheck, "pointer-speed", "pointerSpeed"],
+                    ]);
+                    pointerLockControls.connect()
+                    pointerLockControls.__html3d = element;
+                    h3d.pointerLockControls.push(pointerLockControls);
+                    break;
+                case "TRACKBALL-CONTROLS":
+                    await loadLibrary(_ => THREE.TrackballControls, "TrackballControls", "https://threejs.org/examples/js/controls/TrackballControls.js");
+                    const trackballControls = new THREE.TrackballControls(camera, renderer.domElement);
+                    processAttributes(trackballControls, attr2, [
+                        [numberCheck, "dynamic-damping-factor", "dynamicDampingFactor"],
+                        [boolCheck, "enabled", "enabled"],
+                        [numberCheck, "max-distance", "maxDistance"],
+                        [numberCheck, "min-distance", "minDistance"],
+                        [boolCheck, "no-pan", "noPan"],
+                        [boolCheck, "no-zoom", "noZoom"],
+                        [numberCheck, "pan-speed", "panSpeed"],
+                        [numberCheck, "rotate-speed", "rotateSpeed"],
+                        [boolCheck, "static-moving", "staticMoving"],
+                        [numberCheck, "zoom-speed", "zoomSpeed"]
+                    ]);
+                    trackballControls.keys = [
+                        stringCheck(attr2("key-orbit"), "KeyA"),
+                        stringCheck(attr2("key-zoom"), "KeyS"),
+                        stringCheck(attr2("key-pan"), "KeyD")
+                    ];
+                    ["left", "right", "middle"].forEach(i => {
+                        if (mouseActions[attr2("mouse-" + i)]) trackballControls.mouseButtons[i.toUpperCase()] = mouseActions[attr2("mouse-" + i)];
+                    });
+                    trackballControls.__html3d = element;
+                    h3d.trackballControls.push(trackballControls);
                     break;
                 case "FONT":
                     if (!fontLoader) {
@@ -685,7 +794,7 @@ setInterval(() => {
             }
         }
         camera.rotation.set(numberCheck(attr("rotation-x"), 0), numberCheck(attr("rotation-y"), 0), numberCheck(attr("rotation-z"), 0));
-        camera.position.set(numberCheck(attr("x", 0)), numberCheck(attr("y"), 0), numberCheck(attr("z"), 0));
+        camera.position.set(numberCheck(attr("x"), 0), numberCheck(attr("y"), 0), numberCheck(attr("z"), 0));
         h3d.orbitControls.forEach(i => {
             i.target.x = camera.position.x;
             i.target.y = camera.position.y;

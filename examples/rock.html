@@ -1,6 +1,6 @@
 <title>The rock</title>
 <script src="../html3d.js"></script>
-<html3d z="5" id="hello" maximize style="position: absolute; left: 0; top: 0">
+<html3d id="hello" maximize style="position: absolute; left: 0; top: 0" z="5">
     <mesh>
         <tetrahedron-geometry detail="2"></tetrahedron-geometry>
         <mesh-phong-material color="#156289" emissive="#072534"></mesh-phong-material>
@@ -8,5 +8,5 @@
     <point-light y="200"></point-light>
     <point-light x="100" y="200" z="100"></point-light>
     <point-light x="-100" y="-200" z="-100"></point-light>
-    <orbit-controls></orbit-controls>
+    <arcball-controls></arcball-controls>
 </html3d>

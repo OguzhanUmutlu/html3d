@@ -1,6 +1,6 @@
 <title>Spinning Heart</title>
 <script src="../html3d.js"></script>
-<html3d z="35" id="hello" maximize style="position: absolute; left: 0; top: 0">
+<html3d id="hello" maximize style="position: absolute; left: 0; top: 0" z="35">
     <mesh rotation-x="pi" y="10">
         <shape-geometry>
             <shape>
@@ -15,7 +15,7 @@
         </shape-geometry>
         <mesh-basic-material side="double"></mesh-basic-material>
     </mesh>
-    <orbit-controls></orbit-controls>
+    <arcball-controls></arcball-controls>
 </html3d>
 <script type="module">
     await html3d.promise;
