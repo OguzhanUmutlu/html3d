@@ -55,12 +55,12 @@
 - [ ] Parametric geometry
 - [X] Text geometry
 
-## Materials 2/17
+## Materials 5/17
 
-- [ ] Line based material
-- [ ] Line dashed material
+- [X] Line basic material
+- [X] Line dashed material
 - [X] Mesh basic material
-- [ ] Mesh depth material
+- [X] Mesh depth material
 - [ ] Mesh distance material
 - [ ] Mesh lambert material
 - [ ] Mesh metcap material
@@ -75,17 +75,17 @@
 - [ ] Shadow material
 - [ ] Sprite material
 
-## Lights 1/9
+## Lights 8/9
 
-- [ ] Ambient light
-- [ ] Ambient light probe
-- [ ] Directional light
-- [ ] Hemisphere light
-- [ ] Hemisphere light probe
+- [X] Ambient light
+- [X] Ambient light probe
+- [X] Directional light
+- [X] Hemisphere light
+- [X] Hemisphere light probe
 - [ ] Light probe
 - [X] Point light
-- [ ] Rect area light
-- [ ] Spotlight
+- [X] Rect area light
+- [X] Spotlight
 
 ## Fogs 0/2
 

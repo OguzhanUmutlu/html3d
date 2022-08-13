@@ -14,6 +14,7 @@ setInterval(() => {
     __eval.length = 0;
 });
 (async () => {
+    const elementAssignments = new Map();
     const loadPromise = new Promise(r => addEventListener("load", r));
     const allChildrens = element => {
         const children = element.children;
@@ -126,7 +127,7 @@ setInterval(() => {
         };
 
         findObjectByElement(element) {
-            return this.scene.children.find(i => i.__html3d === element);
+            return elementAssignments.get(element);
         };
 
         findObjectById(id) {
@@ -257,10 +258,12 @@ setInterval(() => {
     const boolCheck = (a, b) => a !== null ? a !== "false" : b;
     const stringCheck = (a, b, c) => !b || b.includes(a) ? a : c;
     const colorCheck = (a, b) => {
-        if (/^#[0-9a-f]{6}$/i.test(a)) return numberCheck(a.replace("#", "0x"), b);
-        if (/^#[0-9a-f]{3}$/i.test(a)) return numberCheck("0x" + a.replace("#", "") + a.replace("#", ""), b);
-        if (/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/.test(a)) return numberCheck("0x" + a.substring(4).split("").reverse().slice(1).reverse().join("").split(",").map(i => (i.trimStart().trimEnd() * 1 || 0).toString(16)).join(""), b);
-        return numberCheck(a, b);
+        let res = numberCheck(a, b)
+        if (/^#[0-9a-f]{6}$/i.test(a)) res = numberCheck(a.replace("#", "0x"), b);
+        if (/^#[0-9a-f]{3}$/i.test(a)) res = numberCheck("0x" + a.replace("#", "") + a.replace("#", ""), b);
+        if (/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/.test(a)) res = numberCheck("0x" + a.substring(4).split("").reverse().slice(1).reverse().join("").split(",").map(i => (i.trimStart().trimEnd() * 1 || 0).toString(16)).join(""), b);
+        if (isNaN(res * 1)) return b;
+        return res;
     };
     const vectorCheck = (a, b) => {
         if (a.some(i => !numberCheck(i))) return b;
@@ -352,13 +355,6 @@ setInterval(() => {
             };
         })();
     };
-    const processAttributes = (obj, attr, list) => {
-        for (let i = 0; i < list.length; i++) {
-            const at = list[i];
-            const res = at[0](attr(at[1]), ...at.slice(3));
-            if (res) obj[at[2]] = res;
-        }
-    };
     const processBehavior = (obj, behavior, h3d) => {
         if (!behavior) return;
         let actions = [];
@@ -408,65 +404,742 @@ setInterval(() => {
             });
         });
     };
-    const processObject3DAttributes = (obj, attr) => {
-        obj.position.x = numberCheck(attr("x"), 0);
-        obj.position.y = numberCheck(attr("y"), 0);
-        obj.position.z = numberCheck(attr("z"), 0);
-        obj.rotation.x = numberCheck(attr("rotation-x"), 0);
-        obj.rotation.y = numberCheck(attr("rotation-y"), 0);
-        obj.rotation.z = numberCheck(attr("rotation-z"), 0);
-        obj.scale.x = numberCheck(attr("scale-x"), 1);
-        obj.scale.y = numberCheck(attr("scale-y"), 1);
-        obj.scale.z = numberCheck(attr("scale-z"), 1);
-        obj.castShadow = boolCheck(attr("cast-shadow"), false);
-        obj.visible = boolCheck(attr("visible"), true);
-        if (vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")])) obj.lookAt(vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")]));
+    const processAttributes = (obj, attr, list) => {
+        for (let i = 0; i < list.length; i++) {
+            const at = list[i];
+            if (!at[2]) at[2] = at[1].split("-").map((i, j) => j === 0 ? i : i.charAt(0).toUpperCase() + i.substring(1)).join("");
+            const res = at[0](attr(at[1]), ...at.slice(3));
+            if (res) obj[at[2]] = res;
+        }
     };
-    const processMaterialAttributes = (obj, attr) => {
-        processAttributes(obj, attr, [
-            [numberCheck, "alpha-test", "alphaTest"],
-            [numberCheck, "alpha-to-coverage", "alphaToCoverage"],
-            [numberCheck, "blend-dst", "blendDst"],
-            [numberCheck, "blend-dst-alpha", "blendDstAlpha"],
-            [numberCheck, "blend-equation", "blendEquation"],
-            [numberCheck, "blend-equation-alpha", "blendEquationAlpha"],
-            [numberCheck, "blend-src", "blendSrc"],
-            [numberCheck, "blend-src-alpha", "blendSrcAlpha"],
-            [boolCheck, "clip-intersection", "clipIntersection"],
-            [boolCheck, "clip-shadows", "clipShadows"],
-            [boolCheck, "color-write", "colorWrite"],
-            [jsonCheck, "defines", "defines"],
-            [numberCheck, "depth-func", "depthFunc"],
-            [boolCheck, "depth-test", "depthTest"],
-            [boolCheck, "depth-write", "depthWrite"],
-            [boolCheck, "stencil-write", "stencilWrite"],
-            [numberCheck, "stencil-write-mask", "stencilWriteMask"],
-            [numberCheck, "stencil-func", "stencilFunc"],
-            [numberCheck, "stencil-ref", "stencilRef"],
-            [numberCheck, "stencil-func-mask", "stencilFuncMask"],
-            [numberCheck, "stencil-fail", "stencilFail"],
-            [numberCheck, "stencil-z-fail", "stencilZFail"],
-            [stringCheck, "name", "name"],
-            [numberCheck, "opacity", "opacity"],
-            [boolCheck, "polygon-offset", "polygonOffset"],
-            [numberCheck, "polygon-offset-factor", "polygonOffsetFactor"],
-            [numberCheck, "polygon-offset-units", "polygonOffsetUnits"],
-            [stringCheck, "precision", "precision", ["highp", "mediump", "lowp"]],
-            [boolCheck, "premultiplied-alpha", "premultipliedAlpha"],
-            [boolCheck, "dithering", "dithering"],
-            [sideCheck, "shadow-side", "shadowSide"],
-            [sideCheck, "side", "side"],
-            [boolCheck, "tone-mapped", "toneMapped"],
-            [boolCheck, "transparent", "transparent"],
-            [boolCheck, "visible", "visible"],
-        ]);
+    const applyAttributes = {
+        Object3D: (obj, attr) => {
+            // TODO: animations, children, customDepthMaterial, customDistanceMaterial, layers, matrix
+            // TODO: matrixWorld, modelViewMatrix, normalMatrix, onAfterRender, onBeforeRender,
+            obj.position.x = numberCheck(attr("x"), 0);
+            obj.position.y = numberCheck(attr("y"), 0);
+            obj.position.z = numberCheck(attr("z"), 0);
+            obj.rotation.x = numberCheck(attr("rotation-x"), 0);
+            obj.rotation.y = numberCheck(attr("rotation-y"), 0);
+            obj.rotation.z = numberCheck(attr("rotation-z"), 0);
+            obj.quaternion.x = numberCheck(attr("quaternion-x"), 0);
+            obj.quaternion.y = numberCheck(attr("quaternion-y"), 0);
+            obj.quaternion.z = numberCheck(attr("quaternion-z"), 0);
+            obj.scale.x = numberCheck(attr("scale-x"), 1);
+            obj.scale.y = numberCheck(attr("scale-y"), 1);
+            obj.scale.z = numberCheck(attr("scale-z"), 1);
+            if (vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")])) obj.lookAt(vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")]));
+            processAttributes(obj, attr, [
+                [boolCheck, "cast-shadow"],
+                [boolCheck, "visible"],
+                [boolCheck, "frustum-culled"],
+                [boolCheck, "matrix-auto-update"],
+                [boolCheck, "matrix-world-needs-update"],
+                [boolCheck, "receive-shadow"],
+                [numberCheck, "render-order"]
+            ]);
+        },
+        Light: (obj, attr) => {
+            applyAttributes.Object3D(obj, attr);
+            processAttributes(obj, attr, [
+                [colorCheck, "color"],
+                [numberCheck, "intensity"]
+            ]);
+        },
+        BufferGeometry: (obj, attr) => {
+            // TODO: maybe more attributes?
+            processAttributes(obj, attr, [
+                [boolCheck, "morph-attributes"]
+            ]);
+        },
+        LatheGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        BoxGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        CapsuleGeometry: (obj, attr) => {
+            applyAttributes.LatheGeometry(obj, attr);
+        },
+        CircleGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        ConeGeometry: (obj, attr) => {
+            applyAttributes.CylinderGeometry(obj, attr);
+        },
+        CylinderGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        PolyhedronGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        DodecahedronGeometry: (obj, attr) => {
+            applyAttributes.PolyhedronGeometry(obj, attr);
+        },
+        IcosahedronGeometry: (obj, attr) => {
+            applyAttributes.PolyhedronGeometry(obj, attr);
+        },
+        OctahedronGeometry: (obj, attr) => {
+            applyAttributes.PolyhedronGeometry(obj, attr);
+        },
+        PlaneGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        RingGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        ShapeGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        SphereGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        TetrahedronGeometry: (obj, attr) => {
+            applyAttributes.PolyhedronGeometry(obj, attr);
+        },
+        TorusGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        TorusKnotGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        TubeGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        ConvexGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        ExtrudeGeometry: (obj, attr) => {
+            applyAttributes.BufferGeometry(obj, attr);
+        },
+        TextGeometry: (obj, attr) => {
+            applyAttributes.ExtrudeGeometry(obj, attr);
+        },
+        Material: (obj, attr) => {
+            // TODO: blending, clippingPlanes
+            processAttributes(obj, attr, [
+                [numberCheck, "alpha-test"],
+                [numberCheck, "alpha-to-coverage"],
+                [numberCheck, "blend-dst"],
+                [numberCheck, "blend-dst-alpha"],
+                [numberCheck, "blend-equation"],
+                [numberCheck, "blend-equation-alpha"],
+                [numberCheck, "blend-src"],
+                [numberCheck, "blend-src-alpha"],
+                [boolCheck, "clip-intersection"],
+                [boolCheck, "clip-shadows"],
+                [boolCheck, "color-write"],
+                [jsonCheck, "defines"],
+                [numberCheck, "depth-func"],
+                [boolCheck, "depth-test"],
+                [boolCheck, "depth-write"],
+                [boolCheck, "stencil-write"],
+                [numberCheck, "stencil-write-mask"],
+                [numberCheck, "stencil-func"],
+                [numberCheck, "stencil-ref"],
+                [numberCheck, "stencil-func-mask"],
+                [numberCheck, "stencil-fail"],
+                [numberCheck, "stencil-z-fail"],
+                [stringCheck, "name"],
+                [numberCheck, "opacity"],
+                [boolCheck, "polygon-offset"],
+                [numberCheck, "polygon-offset-factor"],
+                [numberCheck, "polygon-offset-units"],
+                [stringCheck, "precision", null, ["highp", "mediump", "lowp"]],
+                [boolCheck, "premultiplied-alpha"],
+                [boolCheck, "dithering"],
+                [sideCheck, "shadow-side"],
+                [sideCheck, "side"],
+                [boolCheck, "tone-mapped"],
+                [boolCheck, "transparent"],
+                [boolCheck, "visible"],
+            ]);
+        },
+        MeshBasicMaterial: (obj, attr) => {
+            // TODO: alphaMap, aoMap, aoMapIntensity, envMap, lightMap, map, specularMap
+            applyAttributes.Material(obj, attr);
+            processAttributes(obj, attr, [
+                [colorCheck, "color"],
+                [numberCheck, "combine"],
+                [boolCheck, "fog"],
+                [numberCheck, "reflectivity"],
+                [numberCheck, "refraction-ratio"],
+                [boolCheck, "wireframe"],
+                [stringCheck, "wireframe-line-cap", "wireframeLinecap", ["round", "butt", "square"]],
+                [stringCheck, "wireframe-line-join", "wireframeLinejoin", ["round", "bevel", "miter"]],
+                [numberCheck, "wireframe-line-width", "wireframeLinewidth"]
+            ]);
+        },
+        MeshPhongMaterial: (obj, attr) => {
+            // TODO: alphaMap, aoMap, bumpMap, displacementMap, emissiveMap, envMap, lightMap, map, normalMap
+            // TODO: specularMap
+            applyAttributes.Material(obj, attr);
+            if (vectorCheck([attr("normal-scale-x"), attr("normal-scale-y")])) obj.normalScale = vectorCheck([attr("normal-scale-x"), attr("normal-scale-y")]);
+            processAttributes(obj, attr, [
+                [numberCheck, "ao-map-intensity"],
+                [numberCheck, "bump-scale"],
+                [colorCheck, "color"],
+                [numberCheck, "combine"],
+                [numberCheck, "displacement-scale"],
+                [numberCheck, "displacement-bias"],
+                [colorCheck, "emissive"],
+                [numberCheck, "emissive-intensity"],
+                [numberCheck, "flat-shading"],
+                [boolCheck, "fog"],
+                [numberCheck, "light-map-intensity"],
+                [numberCheck, "normal-map-type"],
+                [numberCheck, "reflectivity"],
+                [numberCheck, "refraction-ratio"],
+                [numberCheck, "shininess"],
+                [colorCheck, "specular"],
+                [boolCheck, "wireframe"],
+                [stringCheck, "wireframe-line-cap", "wireframeLinecap"],
+                [stringCheck, "wireframe-line-join", "wireframeLinejoin"],
+                [numberCheck, "wireframe-line-width", "wireframeLinewidth"]
+            ]);
+        },
+        LineBasicMaterial: (obj, attr) => {
+            applyAttributes.Material(obj, attr);
+            processAttributes(obj, attr, [
+                [colorCheck, "color"],
+                [boolCheck, "fog"],
+                [numberCheck, "line-width", "linewidth"],
+                [stringCheck, "line-cap", "linecap"],
+                [stringCheck, "line-join", "linejoin"]
+            ]);
+        },
+        LineDashedMaterial: (obj, attr) => {
+            applyAttributes.LineBasicMaterial(obj, attr);
+            processAttributes(obj, attr, [
+                [numberCheck, "dash-size"],
+                [numberCheck, "gap-size"],
+                [numberCheck, "scale"]
+            ]);
+        },
+        MeshDepthMaterial: (obj, attr) => {
+            // TODO: alphaMap, depthPacking, displacementMap, map
+            processAttributes(obj, attr, [
+                [numberCheck, "displacement-scale"],
+                [numberCheck, "displacement-bias"],
+                [boolCheck, "fog"],
+                [boolCheck, "wireframe"],
+                [numberCheck, "wireframe-line-width", "wireframeLinewidth"]
+            ]);
+        },
+        PointLight: (obj, attr) => {
+            applyAttributes.Light(obj, attr);
+            processAttributes(obj, attr, [
+                [numberCheck, "decay"],
+                [numberCheck, "distance"],
+                [numberCheck, "power"]
+            ]);
+        },
+        AmbientLight: (obj, attr) => {
+            applyAttributes.Light(obj, attr);
+        },
+        AmbientLightProbe: (obj, attr) => {
+            applyAttributes.Light(obj, attr);
+        },
+        DirectionalLight: (obj, attr) => {
+            applyAttributes.Light(obj, attr);
+            processAttributes(obj, attr, [
+                [boolCheck, "cast-shadow"]
+            ]);
+        },
+        HemisphereLight: (obj, attr) => {
+            applyAttributes.Light(obj, attr);
+            processAttributes(obj, attr, [
+                [colorCheck, "ground-color"]
+            ]);
+        },
+        RectAreaLight: (obj, attr) => {
+            applyAttributes.Light(obj, attr);
+            processAttributes(obj, attr, [
+                [numberCheck, "height"],
+                [numberCheck, "width"],
+                [numberCheck, "power"]
+            ]);
+        },
+        SpotLight: (obj, attr) => {
+            applyAttributes.Light(obj, attr);
+            processAttributes(obj, attr, [
+                [numberCheck, "angle"],
+                [boolCheck, "cast-shadow"],
+                [numberCheck, "decay"],
+                [numberCheck, "distance"],
+                [numberCheck, "penumbra"],
+                [numberCheck, "power"]
+            ]);
+        },
+        OrbitControls: (obj, attr) => {
+            processAttributes(obj, attr, [
+                [boolCheck, "auto-rotate"],
+                [numberCheck, "auto-rotate-speed"],
+                [numberCheck, "damping-factor"],
+                [boolCheck, "enabled"],
+                [boolCheck, "enable-damping"],
+                [boolCheck, "enable-pan"],
+                [boolCheck, "enable-rotate"],
+                [boolCheck, "enable-zoom"],
+                [numberCheck, "key-pan-speed"],
+                [numberCheck, "max-azimuth-angle"],
+                [numberCheck, "max-distance"],
+                [numberCheck, "max-polar-angle"],
+                [numberCheck, "max-zoom"],
+                [numberCheck, "min-azimuth-angle"],
+                [numberCheck, "min-distance"],
+                [numberCheck, "min-polar-angle"],
+                [numberCheck, "min-zoom"],
+                [numberCheck, "pan-speed"],
+                [numberCheck, "rotate-speed"],
+                [boolCheck, "screen-space-panning"]
+            ]);
+            ["left", "right", "up", "bottom"].forEach(i => {
+                if (attr("key-" + i)) obj.keys[i.toUpperCase()] = attr("key-" + i.toUpperCase());
+            });
+            ["left", "right", "middle"].forEach(i => {
+                if (mouseActions[attr("mouse-" + i)]) obj.mouseButtons[i.toUpperCase()] = mouseActions[attr("mouse-" + i)];
+            });
+            ["one", "two"].forEach(i => {
+                if (mouseActions[attr("touch-" + i)]) obj.touches[i.toUpperCase()] = mouseActions[attr("touch-" + i)];
+            });
+        },
+        ArcballControls: (obj, attr) => {
+            processAttributes(obj, attr, [
+                [boolCheck, "adjust-near-far"],
+                [boolCheck, "cursor-zoom"],
+                [numberCheck, "damping-factor"],
+                [boolCheck, "enabled"],
+                [boolCheck, "enable-animations"],
+                [boolCheck, "enable-grid"],
+                [boolCheck, "enable-pan"],
+                [boolCheck, "enable-rotate"],
+                [boolCheck, "enable-zoom"],
+                [numberCheck, "focus-animation-time"],
+                [numberCheck, "max-distance"],
+                [numberCheck, "max-zoom"],
+                [numberCheck, "min-distance"],
+                [numberCheck, "min-zoom"],
+                [numberCheck, "scale-factor"],
+                [numberCheck, "w-max"],
+                [numberCheck, "radius-factor"]
+            ]);
+        },
+        FlyControls: (obj, attr) => {
+            processAttributes(obj, attr, [
+                [boolCheck, "auto-forward"],
+                [boolCheck, "drag-to-look"],
+                [numberCheck, "movement-speed"],
+                [numberCheck, "roll-speed"]
+            ]);
+        },
+        FirstPersonControls: (obj, attr) => {
+            processAttributes(obj, attr, [
+                [boolCheck, "active-look"],
+                [boolCheck, "auto-forward"],
+                [boolCheck, "constrain-vertical"],
+                [boolCheck, "enabled"],
+                [numberCheck, "height-coef"],
+                [numberCheck, "height-max"],
+                [numberCheck, "height-min"],
+                [numberCheck, "height-speed"],
+                [boolCheck, "look-vertical"],
+                [numberCheck, "look-speed"],
+                [boolCheck, "mouse-drag-on"],
+                [numberCheck, "movement-speed"],
+                [numberCheck, "vertical-max"],
+                [numberCheck, "vertical-min"]
+            ]);
+        },
+        PointerLockControls: (obj, attr) => {
+            processAttributes(obj, attr, [
+                [numberCheck, "max-polar-angle"],
+                [numberCheck, "min-polar-angle"],
+                [numberCheck, "pointer-speed"]
+            ]);
+        },
+        TrackballControls: (obj, attr) => {
+            processAttributes(obj, attr, [
+                [numberCheck, "dynamic-damping-factor"],
+                [boolCheck, "enabled"],
+                [numberCheck, "max-distance"],
+                [numberCheck, "min-distance"],
+                [boolCheck, "no-pan"],
+                [boolCheck, "no-zoom"],
+                [numberCheck, "pan-speed"],
+                [numberCheck, "rotate-speed"],
+                [boolCheck, "static-moving"],
+                [numberCheck, "zoom-speed"]
+            ]);
+            obj.keys = [
+                stringCheck(attr("key-orbit"), "KeyA"),
+                stringCheck(attr("key-zoom"), "KeyS"),
+                stringCheck(attr("key-pan"), "KeyD")
+            ];
+            ["left", "right", "middle"].forEach(i => {
+                if (mouseActions[attr("mouse-" + i)]) obj.mouseButtons[i.toUpperCase()] = mouseActions[attr("mouse-" + i)];
+            });
+        },
     };
-    const processBufferGeometryAttributes = (obj, attr) => {
-        processAttributes(obj, attr, [
-            [boolCheck, "morph-attributes", "morphAttributes"]
-        ]);
+    const tagNameToName = tagName => tagName.split("-").map(word => word.charAt(0).toUpperCase() + word.substring(1).toLowerCase()).join("");
+    const build = {
+        BoxGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.BoxGeometry(numberCheck(attr("width"), 1), numberCheck(attr("height"), 1), numberCheck(attr("depth"), 1), numberCheck(attr("widthSegments"), 1), numberCheck(attr("heightSegments"), 1), numberCheck(attr("depthSegments"), 1));
+            applyAttributes.BoxGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        CapsuleGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.CapsuleGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("length"), 1), numberCheck(attr("cap-subdivisions"), 8), numberCheck(attr("radial-segments"), 16));
+            applyAttributes.CapsuleGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        CircleGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.CircleGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("segments"), 8), numberCheck(attr("theta-start"), 0), numberCheck(attr("theta-length"), 2 * Math.PI));
+            applyAttributes.CircleGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        ConeGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.ConeGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("height"), 1), numberCheck(attr("radial-segments"), 8), numberCheck(attr("height-segments"), 1), boolCheck(attr("open-ended"), false), numberCheck(attr("theta-start"), 0), numberCheck(attr("theta-length"), 2 * Math.PI));
+            applyAttributes.ConeGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        CylinderGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.CylinderGeometry(numberCheck(attr("radius-top"), 1), numberCheck(attr("radius-bottom"), 1), numberCheck(attr("height"), 1), numberCheck(attr("radial-segments"), 8), numberCheck(attr("height-segments"), 1), boolCheck(attr("open-ended"), false), numberCheck(attr("theta-start"), 0), numberCheck(attr("theta-length"), 2 * Math.PI));
+            applyAttributes.CylinderGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        DodecahedronGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.DodecahedronGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("detail"), 0));
+            applyAttributes.DodecahedronGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        IcosahedronGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.IcosahedronGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("detail"), 0));
+            applyAttributes.IcosahedronGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        LatheGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            // BROKEN
+            const points = Array.from(element.children).filter(i => i.tagName === "POINT").map(i => new THREE.Vector2(numberCheck(i.getAttribute("x"), 0), numberCheck(i.getAttribute("y"), 0)));
+            const geometry = new THREE.LatheGeometry(points, numberCheck(attr("segments"), 12), numberCheck(attr("phiStart"), 0), numberCheck(attr("phiLength"), 2 * Math.PI));
+            applyAttributes.LatheGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        OctahedronGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.OctahedronGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("detail"), 0));
+            applyAttributes.OctahedronGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        PlaneGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.PlaneGeometry(numberCheck(attr("width"), 1), numberCheck(attr("height"), 1), numberCheck(attr("width-segments"), 1), numberCheck(attr("height-segments"), 1));
+            applyAttributes.PlaneGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        RingGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.RingGeometry(numberCheck(attr("inner-radius"), 0.5), numberCheck(attr("outer-radius"), 1), numberCheck(attr("theta-segments"), 8), numberCheck(attr("phi-segments"), 1), numberCheck(attr("theta-start"), 0), numberCheck(attr("theta-length"), 2 * Math.PI));
+            applyAttributes.RingGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        ShapeGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const shape = processShape(Array.from(element.children).filter(i => i.tagName === "SHAPE").reverse()[0]);
+            if (!shape) return console.error("ShapeGeometry: No <shape> found");
+            const geometry = new THREE.ShapeGeometry(shape, numberCheck(attr("curve-segments"), 12));
+            applyAttributes.ShapeGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        SphereGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.SphereGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("width-segments"), 32), numberCheck(attr("height-segments"), 16), numberCheck(attr("phi-start"), 0), numberCheck(attr("phi-length"), Math.PI * 2), numberCheck(attr("theta-start"), 0), numberCheck(attr("theta-length"), 2 * Math.PI));
+            applyAttributes.SphereGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        TetrahedronGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.TetrahedronGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("detail"), 0));
+            applyAttributes.TetrahedronGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        //amougs
+        TorusGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.TorusGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("tube"), 0.4), numberCheck(attr("radial-segments"), 8), numberCheck(attr("tubular-segments"), 6), numberCheck(attr("arc"), Math.PI * 2));
+            applyAttributes.TorusGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        TorusKnotGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const geometry = new THREE.TorusKnotGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("tube"), 0.4), numberCheck(attr("tubular-segments"), 64), numberCheck(attr("radial-segments"), 8), numberCheck(attr("p"), 2), numberCheck(attr("q"), 3));
+            applyAttributes.TorusKnotGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        TubeGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const curve = processCurve(Array.from(element.children).filter(i => i.tagName === "CURVE").reverse()[0]);
+            if (!curve) return console.error("TubeGeometry: No <curve> found");
+            const geometry = new THREE.TubeGeometry(curve, numberCheck(attr("tubular-segments"), 64), numberCheck(attr("radius"), 1), numberCheck(attr("radial-segments"), 8), boolCheck(attr("closed"), false));
+            applyAttributes.TubeGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        ConvexGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            await loadLibrary(_ => THREE.ConvexHull, "ConvexHull", "https://threejs.org/examples/js/math/ConvexHull.js");
+            await loadLibrary(_ => THREE.ConvexGeometry, "ConvexGeometry", "https://threejs.org/examples/js/geometries/ConvexGeometry.js");
+            const points1 = Array.from(element.children).filter(i => i.tagName === "POINT").map(i => new THREE.Vector3(numberCheck(i.getAttribute("x"), 0), numberCheck(i.getAttribute("y"), 0), numberCheck(i.getAttribute("z"), 0)));
+            const geometry = new THREE.ConvexGeometry(points1);
+            applyAttributes.ConvexGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        TextGeometry: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            await loadLibrary(_ => !THREE.TextGeometry.toString().includes("console.error"), "TextGeometry", "https://threejs.org/examples/js/geometries/TextGeometry.js");
+            const font = h3d.fonts.find(i => [i.name, i.src].includes(stringCheck(attr("font")))) || h3d.fonts.find(i => i.familyName === stringCheck(attr("font")));
+            if (!font) return console.warn("Font not found: " + stringCheck(attr("font")));
+            element.style.display = "none";
+            const geometry = new THREE.TextGeometry(stringCheck(element.innerText), {
+                font: font.font,
+                size: numberCheck(attr("size"), 100),
+                height: numberCheck(attr("height"), 50),
+                curveSegments: numberCheck(attr("curve-segments"), 12),
+                bevelEnabled: boolCheck(attr("bevel"), false),
+                bevelThickness: numberCheck(attr("bevel-thickness"), 10),
+                bevelSize: numberCheck(attr("bevel-size"), 8),
+                bevelOffset: numberCheck(attr("bevel-offset"), 0),
+                bevelSegments: numberCheck(attr("bevel-segments"), 3)
+            });
+            applyAttributes.TextGeometry(geometry, attr);
+            if (assign) elementAssignments.set(element, geometry);
+            return geometry;
+        },
+        MeshBasicMaterial: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const obj = {};
+            applyAttributes.MeshBasicMaterial(obj, attr);
+            const material = new THREE.MeshBasicMaterial(obj);
+            if (assign) elementAssignments.set(element, material);
+            return material;
+        },
+        MeshPhongMaterial: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const obj = {};
+            applyAttributes.MeshPhongMaterial(obj, attr);
+            const material = new THREE.MeshPhongMaterial(obj);
+            if (assign) elementAssignments.set(element, material);
+            return material;
+        },
+        LineBasicMaterial: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const obj = {};
+            applyAttributes.LineBasicMaterial(obj, attr);
+            const material = new THREE.LineBasicMaterial(obj);
+            if (assign) elementAssignments.set(element, material);
+            return material;
+        },
+        LineDashedMaterial: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const obj = {};
+            applyAttributes.LineDashedMaterial(obj, attr);
+            const material = new THREE.LineDashedMaterial(obj);
+            if (assign) elementAssignments.set(element, material);
+            return material;
+        },
+        MeshDepthMaterial: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const obj = {};
+            applyAttributes.MeshDepthMaterial(obj, attr);
+            const material = new THREE.MeshDepthMaterial(obj);
+            if (assign) elementAssignments.set(element, material);
+            return material;
+        },
+        Mesh: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const findM = end => {
+                const g = Array.from(element.children).filter(i => i.tagName.endsWith(end) && build[tagNameToName(i.tagName)]).reverse()[0];
+                if (g) return build[tagNameToName(g.tagName)](h3d, g, s => g.getAttribute(s));
+            }
+            let geometry = attr("geometry") ? h3d.element.querySelector(attr("geometry")) : await findM("-GEOMETRY");
+            if (!(geometry instanceof THREE.BufferGeometry)) geometry = new THREE.BoxGeometry();
+            let material = attr("material") ? h3d.element.querySelector(attr("material")) : await findM("-MATERIAL");
+            if (!(material instanceof THREE.Material)) material = new THREE.MeshBasicMaterial();
+            const mesh = new THREE.Mesh(geometry, material);
+            processBehavior(mesh, attr("behavior"), h3d);
+            applyAttributes.Object3D(mesh, attr);
+            if (boolCheck(attr("register"), true)) h3d.scene.add(mesh);
+            if (assign) elementAssignments.set(element, mesh);
+            return mesh;
+        },
+        PointLight: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const light = new THREE.PointLight();
+            processBehavior(light, attr("behavior"), h3d);
+            applyAttributes.PointLight(light, attr);
+            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (assign) elementAssignments.set(element, light);
+            return light;
+        },
+        AmbientLight: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const light = new THREE.AmbientLight();
+            processBehavior(light, attr("behavior"), h3d);
+            applyAttributes.AmbientLight(light, attr);
+            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (assign) elementAssignments.set(element, light);
+            return light;
+        },
+        AmbientLightProbe: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const light = new THREE.AmbientLightProbe();
+            processBehavior(light, attr("behavior"), h3d);
+            applyAttributes.AmbientLightProbe(light, attr);
+            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (assign) elementAssignments.set(element, light);
+            return light;
+        },
+        DirectionalLight: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const light = new THREE.DirectionalLight();
+            processBehavior(light, attr("behavior"), h3d);
+            applyAttributes.DirectionalLight(light, attr);
+            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (assign) elementAssignments.set(element, light);
+            return light;
+        },
+        HemisphereLight: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const light = new THREE.HemisphereLight();
+            processBehavior(light, attr("behavior"), h3d);
+            applyAttributes.HemisphereLight(light, attr);
+            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (assign) elementAssignments.set(element, light);
+            return light;
+        },
+        RectAreaLight: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const light = new THREE.RectAreaLight();
+            processBehavior(light, attr("behavior"), h3d);
+            applyAttributes.RectAreaLight(light, attr);
+            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (assign) elementAssignments.set(element, light);
+            return light;
+        },
+        SpotLight: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            const light = new THREE.SpotLight();
+            processBehavior(light, attr("behavior"), h3d);
+            applyAttributes.SpotLight(light, attr);
+            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (assign) elementAssignments.set(element, light);
+            return light;
+        },
+        OrbitControls: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            await loadLibrary(_ => THREE.OrbitControls, "OrbitControls", "https://threejs.org/examples/js/controls/OrbitControls.js");
+            const orbitControls = new THREE.OrbitControls(h3d.camera, h3d.renderer.domElement);
+            applyAttributes.OrbitControls(orbitControls, attr);
+            h3d.orbitControls.push(orbitControls);
+            if (assign) elementAssignments.set(element, orbitControls);
+            return orbitControls;
+        },
+        ArcballControls: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            await loadLibrary(_ => THREE.ArcballControls, "ArcballControls", "https://threejs.org/examples/js/controls/ArcballControls.js");
+            const arcballControls = new THREE.ArcballControls(h3d.camera, h3d.renderer.domElement);
+            applyAttributes.ArcballControls(arcballControls, attr);
+            h3d.arcballControls.push(arcballControls);
+            if (assign) elementAssignments.set(element, arcballControls);
+            return arcballControls;
+        },
+        FlyControls: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            await loadLibrary(_ => THREE.FlyControls, "FlyControls", "https://threejs.org/examples/js/controls/FlyControls.js");
+            const flyControls = new THREE.FlyControls(h3d.camera, h3d.renderer.domElement);
+            applyAttributes.FlyControls(flyControls, attr);
+            h3d.flyControls.push(flyControls);
+            if (assign) elementAssignments.set(element, flyControls);
+            return flyControls;
+        },
+        FirstPersonControls: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            await loadLibrary(_ => THREE.FirstPersonControls, "FirstPersonControls", "https://threejs.org/examples/js/controls/FirstPersonControls.js");
+            const firstPersonControls = new THREE.FirstPersonControls(h3d.camera, h3d.renderer.domElement);
+            applyAttributes.FirstPersonControls(firstPersonControls, attr);
+            h3d.firstPersonControls.push(firstPersonControls);
+            if (assign) elementAssignments.set(element, firstPersonControls);
+            return firstPersonControls;
+        },
+        PointerLockControls: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            await loadLibrary(_ => THREE.PointerLockControls, "PointerLockControls", "https://threejs.org/examples/js/controls/PointerLockControls.js");
+            const pointerLockControls = new THREE.PointerLockControls(h3d.camera, h3d.renderer.domElement);
+            applyAttributes.PointerLockControls(pointerLockControls, attr);
+            pointerLockControls.connect();
+            h3d.pointerLockControls.push(pointerLockControls);
+            if (assign) elementAssignments.set(element, pointerLockControls);
+            return pointerLockControls;
+        },
+        TrackballControls: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            await loadLibrary(_ => THREE.TrackballControls, "TrackballControls", "https://threejs.org/examples/js/controls/TrackballControls.js");
+            const trackballControls = new THREE.TrackballControls(h3d.camera, h3d.renderer.domElement);
+            applyAttributes.TrackballControls(trackballControls, attr);
+            h3d.trackballControls.push(trackballControls);
+            if (assign) elementAssignments.set(element, trackballControls);
+            return trackballControls;
+        },
+        Font: async (h3d, element, assign = true) => {
+            const attr = s => element.getAttribute(s);
+            if (!fontLoader) {
+                await loadLibrary(_ => THREE.FontLoader.prototype.load, "FontLoader", "https://threejs.org/examples/js/loaders/FontLoader.js")
+                fontLoader = new THREE.FontLoader();
+            }
+            const font = await new Promise(r => fontLoader.load(attr("src"), r, _ => _, _ => r(null)));
+            elementAssignments.set(element, font);
+            if (!font) return console.error("Failed to load font: " + attr("src"));
+            h3d.fonts.push({
+                src: attr("src"), name: attr("name"), familyName: font.data.familyName, font
+            });
+            if (assign) elementAssignments.set(element, font);
+            return font;
+        },
     };
     let fontLoader;
+    const mouseActions = {
+        ROTATE: THREE.MOUSE.ROTATE,
+        rotate: THREE.MOUSE.ROTATE,
+        PAN: THREE.MOUSE.PAN,
+        pan: THREE.MOUSE.PAN,
+        DOLLY: THREE.MOUSE.DOLLY,
+        dolly: THREE.MOUSE.DOLLY
+    };
     for (let i = 0; i < els.length; i++) {
         const el = els[i];
         const canvas = document.createElement("canvas");
@@ -474,7 +1147,6 @@ setInterval(() => {
         canvas.width = attr("width") || 512;
         canvas.height = attr("height") || 512;
         el.appendChild(canvas);
-
         const scene = new Scene();
         const camera = new PerspectiveCamera(numberCheck(attr("fov"), 75), canvas.width / canvas.height, numberCheck(attr("near"), 0.1), numberCheck(attr("far"), 1000));
         const renderer = new WebGLRenderer({
@@ -492,356 +1164,10 @@ setInterval(() => {
         if (colorCheck(attr("background-color"))) renderer.setClearColor(colorCheck(attr("background-color")));
         if (vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")])) camera.lookAt(vectorCheck([attr("look-at-x"), attr("look-at-y"), attr("look-at-z")]));
         const h3d = new HTML3D(el, scene, camera, renderer);
-        const mouseActions = {
-            ROTATE: THREE.MOUSE.ROTATE,
-            rotate: THREE.MOUSE.ROTATE,
-            PAN: THREE.MOUSE.PAN,
-            pan: THREE.MOUSE.PAN,
-            DOLLY: THREE.MOUSE.DOLLY,
-            dolly: THREE.MOUSE.DOLLY
-        };
         for (let i = 0; i < elements.length; i++) {
             const element = elements[i];
-            const attr2 = r => element.getAttribute(r);
-            switch (element.tagName) {
-                case "MESH":
-                    let geometry = new THREE.BoxGeometry(1, 1, 1);
-                    let material = new THREE.MeshBasicMaterial();
-                    const ch = Array.from(element.children);
-                    for (let i = 0; i < ch.length; i++) {
-                        const element2 = ch[i];
-                        const attr3 = r => element2.getAttribute(r);
-                        switch (element2.tagName) {
-                            case "BOX-GEOMETRY":
-                                geometry = new THREE.BoxGeometry(numberCheck(attr3("width"), 1), numberCheck(attr3("height"), 1), numberCheck(attr3("depth"), 1), numberCheck(attr3("width-segments"), 1), numberCheck(attr3("height-segments"), 1), numberCheck(attr3("depth-segments"), 1));
-                                geometry.__html3d = element2;
-                                break;
-                            case "CAPSULE-GEOMETRY":
-                                geometry = new THREE.CapsuleGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("length"), 1), numberCheck(attr3("cap-subdivisions"), 8), numberCheck(attr3("radial-segments"), 16));
-                                geometry.__html3d = element2;
-                                break;
-                            case "CIRCLE-GEOMETRY":
-                                geometry = new THREE.CircleGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("segments"), 8), numberCheck(attr3("theta-start"), 0), numberCheck(attr3("theta-length"), 2 * Math.PI));
-                                geometry.__html3d = element2;
-                                break;
-                            case "CONE-GEOMETRY":
-                                geometry = new THREE.ConeGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("height"), 1), numberCheck(attr3("radial-segments"), 8), numberCheck(attr3("height-segments"), 1), boolCheck(attr3("open-ended"), false), numberCheck(attr3("theta-start"), 0), numberCheck(attr3("theta-length"), 2 * Math.PI));
-                                geometry.__html3d = element2;
-                                break;
-                            case "CYLINDER-GEOMETRY":
-                                geometry = new THREE.CylinderGeometry(numberCheck(attr3("radiusTop"), 1), numberCheck(attr3("radiusBottom"), 1), numberCheck(attr3("height"), 1), numberCheck(attr3("radial-segments"), 8), numberCheck(attr3("height-segments"), 1), boolCheck(attr3("open-ended"), false), numberCheck(attr3("theta-start"), 0), numberCheck(attr3("theta-length"), 2 * Math.PI));
-                                geometry.__html3d = element2;
-                                break;
-                            case "DODECAHEDRON-GEOMETRY":
-                                geometry = new THREE.DodecahedronGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("detail"), 0));
-                                geometry.__html3d = element2;
-                                break;
-                            case "ICOSAHEDRON-GEOMETRY":
-                                geometry = new THREE.IcosahedronGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("detail"), 0));
-                                geometry.__html3d = element2;
-                                break;
-                            case "LATHE-GEOMETRY":
-                                // BROKEN
-                                const points = Array.from(element2.children).filter(i => i.tagName === "POINT").map(i => new THREE.Vector2(numberCheck(i.getAttribute("x"), 0), numberCheck(i.getAttribute("y"), 0)));
-                                geometry = new THREE.LatheGeometry(points, numberCheck(attr3("segments"), 12), numberCheck(attr3("phiStart"), 0), numberCheck(attr3("phiLength"), 2 * Math.PI));
-                                geometry.__html3d = element2;
-                                break;
-                            case "OCTAHEDRON-GEOMETRY":
-                                geometry = new THREE.OctahedronGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("detail"), 0));
-                                geometry.__html3d = element2;
-                                break;
-                            case "PLANE-GEOMETRY":
-                                geometry = new THREE.PlaneGeometry(numberCheck(attr3("width"), 1), numberCheck(attr3("height"), 1), numberCheck(attr3("width-segments"), 1), numberCheck(attr3("height-segments"), 1));
-                                geometry.__html3d = element2;
-                                break;
-                            case "RING-GEOMETRY":
-                                geometry = new THREE.RingGeometry(numberCheck(attr3("inner-radius"), 0.5), numberCheck(attr3("outer-radius"), 1), numberCheck(attr3("theta-segments"), 8), numberCheck(attr3("phi-segments"), 1), numberCheck(attr3("theta-start"), 0), numberCheck(attr3("theta-length"), 2 * Math.PI));
-                                geometry.__html3d = element2;
-                                break;
-                            case "SHAPE-GEOMETRY":
-                                const shape = processShape(Array.from(element2.children).filter(i => i.tagName === "SHAPE").reverse()[0]);
-                                if (!shape) continue;
-                                geometry = new THREE.ShapeGeometry(shape, numberCheck(attr3("curve-segments"), 12));
-                                geometry.__html3d = element2;
-                                break;
-                            case "SPHERE-GEOMETRY":                                 // radius... kinda sus
-                                geometry = new THREE.SphereGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("width-segments"), 32), numberCheck(attr3("height-segments"), 16), numberCheck(attr3("phi-start"), 0), numberCheck(attr3("phi-length"), Math.PI * 2), numberCheck(attr3("theta-start"), 0), numberCheck(attr3("theta-length"), 2 * Math.PI));
-                                geometry.__html3d = element2;
-                                break;
-                            case "TETRAHEDRON-GEOMETRY":
-                                geometry = new THREE.TetrahedronGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("detail"), 0));
-                                processBufferGeometryAttributes(geometry, attr3);
-                                geometry.__html3d = element2;
-                                break;
-                            case "TORUS-GEOMETRY":
-                                geometry = new THREE.TorusGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("tube"), 0.4), numberCheck(attr3("radial-segments"), 8), numberCheck(attr3("tubular-segments"), 6), numberCheck(attr3("arc"), Math.PI * 2));
-                                processBufferGeometryAttributes(geometry, attr3);
-                                geometry.__html3d = element2;
-                                break;
-                            case "TORUS-KNOT-GEOMETRY":
-                                geometry = new THREE.TorusKnotGeometry(numberCheck(attr3("radius"), 1), numberCheck(attr3("tube"), 0.4), numberCheck(attr3("tubular-segments"), 64), numberCheck(attr3("radial-segments"), 8), numberCheck(attr3("p"), 2), numberCheck(attr3("q"), 3));
-                                processBufferGeometryAttributes(geometry, attr3);
-                                geometry.__html3d = element2;
-                                break;
-                            case "TUBE-GEOMETRY":
-                                const curve = processCurve(Array.from(element2.children).filter(i => i.tagName === "CURVE").reverse()[0]);
-                                if (!curve) continue;
-                                geometry = new THREE.TubeGeometry(curve, numberCheck(attr3("tubular-segments"), 64), numberCheck(attr3("radius"), 1), numberCheck(attr3("radial-segments"), 8), boolCheck(attr3("closed"), false));
-                                processBufferGeometryAttributes(geometry, attr3);
-                                geometry.__html3d = element2;
-                                break;
-                            case "CONVEX-GEOMETRY":
-                                // TODO: an example
-                                await loadLibrary(_ => THREE.ConvexHull, "ConvexHull", "https://threejs.org/examples/js/math/ConvexHull.js");
-                                await loadLibrary(_ => THREE.ConvexGeometry, "ConvexGeometry", "https://threejs.org/examples/js/geometries/ConvexGeometry.js");
-                                const points1 = Array.from(element2.children).filter(i => i.tagName === "POINT").map(i => new THREE.Vector3(numberCheck(i.getAttribute("x"), 0), numberCheck(i.getAttribute("y"), 0), numberCheck(i.getAttribute("z"), 0)));
-                                geometry = new THREE.ConvexGeometry(points1);
-                                processBufferGeometryAttributes(geometry, attr3);
-                                geometry.__html3d = element2;
-                                break;
-                            /*case "PARAMETRIC-GEOMETRY":
-                                geometry = new THREE.ParametricGeometry(codeCheck(attr3("func"), ), );
-                                processBufferGeometryAttributes(geometry, attr3);
-                                geometry.__html3d = element2;
-                                break;*/
-                            case "TEXT-GEOMETRY":
-                                await loadLibrary(_ => !THREE.TextGeometry.toString().includes("console.error"), "TextGeometry", "https://threejs.org/examples/js/geometries/TextGeometry.js");
-                                const font = h3d.fonts.find(i => [i.name, i.src].includes(stringCheck(attr3("font")))) || h3d.fonts.find(i => i.familyName === stringCheck(attr3("font")));
-                                if (!font) {
-                                    console.warn("Font not found: " + stringCheck(attr3("font")));
-                                    continue;
-                                }
-                                element2.style.display = "none";
-                                geometry = new THREE.TextGeometry(stringCheck(element2.innerText, ""), {
-                                    font: font.font,
-                                    size: numberCheck(attr3("size"), 100),
-                                    height: numberCheck(attr3("height"), 50),
-                                    curveSegments: numberCheck(attr3("curve-segments"), 12),
-                                    bevelEnabled: boolCheck(attr3("bevel"), false),
-                                    bevelThickness: numberCheck(attr3("bevel-thickness"), 10),
-                                    bevelSize: numberCheck(attr3("bevel-size"), 8),
-                                    bevelOffset: numberCheck(attr3("bevel-offset"), 0),
-                                    bevelSegments: numberCheck(attr3("bevel-segments"), 3)
-                                });
-                                processBufferGeometryAttributes(geometry, attr3);
-                                geometry.__html3d = element2;
-                                break;
-                            case "MESH-BASIC-MATERIAL":
-                                const meshBasicMaterialOptions = {};
-                                processAttributes(meshBasicMaterialOptions, attr3, [
-                                    [colorCheck, "color", "color"],
-                                    [numberCheck, "combine", "combine"],
-                                    [boolCheck, "fog", "fog"],
-                                    [numberCheck, "reflectivity", "reflectivity"],
-                                    [numberCheck, "refraction-ratio", "refractionRatio"],
-                                    [boolCheck, "wireframe", "wireframe"],
-                                    [stringCheck, "wireframe-line-cap", "wireframeLinecap", ["round", "butt", "square"]],
-                                    [stringCheck, "wireframe-line-join", "wireframeLinejoin", ["round", "bevel", "miter"]],
-                                    [numberCheck, "wireframe-line-width", "wireframeLinewidth"]
-                                ]);
-                                processMaterialAttributes(meshBasicMaterialOptions, attr3);
-                                material = new THREE.MeshBasicMaterial(meshBasicMaterialOptions);
-                                material.__html3d = element2;
-                                break;
-                            case "MESH-PHONG-MATERIAL":
-                                const meshPhongMaterialOptions = {};
-                                if (vectorCheck([attr3("normal-scale-x"), attr3("normal-scale-y")])) meshPhongMaterialOptions.normalScale = vectorCheck([attr3("normal-scale-x"), attr3("normal-scale-y")]);
-                                processAttributes(meshPhongMaterialOptions, attr3, [
-                                    [numberCheck, "ao-map-intensity", "aoMapIntensity"],
-                                    [numberCheck, "bump-scale", "bumpScale"],
-                                    [colorCheck, "color", "color"],
-                                    [numberCheck, "combine", "combine"],
-                                    [numberCheck, "displacement-scale", "displacementScale"],
-                                    [numberCheck, "displacement-bias", "displacementBias"],
-                                    [colorCheck, "emissive", "emissive"],
-                                    [numberCheck, "emissive-intensity", "emissiveIntensity"],
-                                    [numberCheck, "flat-shading", "flatShading"],
-                                    [boolCheck, "fog", "fog"],
-                                    [numberCheck, "light-map-intensity", "lightMapIntensity"],
-                                    [numberCheck, "normal-map-type", "normalMapType"],
-                                    [numberCheck, "reflectivity", "reflectivity"],
-                                    [numberCheck, "refraction-ratio", "refractionRatio"],
-                                    [numberCheck, "shininess", "shininess"],
-                                    [colorCheck, "specular", "specular"],
-                                    [boolCheck, "wireframe", "wireframe"],
-                                    [stringCheck, "wireframe-line-cap", "wireframeLinecap"],
-                                    [stringCheck, "wireframe-line-join", "wireframeLinejoin"],
-                                    [numberCheck, "wireframe-line-width", "wireframeLinewidth"]
-                                ]);
-                                processMaterialAttributes(meshPhongMaterialOptions, attr3);
-                                material = new THREE.MeshPhongMaterial(meshPhongMaterialOptions);
-                                material.__html3d = element2;
-                                break;
-                        }
-                    }
-                    const cube = new THREE.Mesh(geometry, material);
-                    processBehavior(cube, attr2("behavior"), h3d);
-                    cube.__html3d = element;
-                    processObject3DAttributes(cube, attr2);
-                    if (boolCheck(attr2("register"), true)) scene.add(cube);
-                    break;
-                case "POINT-LIGHT":
-                    const pointLight = new THREE.PointLight(colorCheck(attr2("color"), 0xffffff), numberCheck(attr2("intensity"), 1), numberCheck(attr2("distance"), 0), numberCheck(attr2("decay"), 1));
-                    pointLight.__html3d = element;
-                    processAttributes(pointLight, attr2, [
-                        [numberCheck, "power", "power"],
-                        [colorCheck, "color", "color"]
-                    ]);
-                    processObject3DAttributes(pointLight, attr2);
-                    if (boolCheck(attr2("register"), true)) scene.add(pointLight);
-                    break;
-                case "ORBIT-CONTROLS":
-                    await loadLibrary(_ => THREE.OrbitControls, "OrbitControls", "https://threejs.org/examples/js/controls/OrbitControls.js");
-                    const orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
-                    processAttributes(orbitControls, attr2, [
-                        [boolCheck, "auto-rotate", "autoRotate"],
-                        [numberCheck, "auto-rotate-speed", "autoRotateSpeed"],
-                        [numberCheck, "damping-factor", "dampingFactor"],
-                        [boolCheck, "enabled", "enabled"],
-                        [boolCheck, "enable-damping", "enableDamping"],
-                        [boolCheck, "enable-pan", "enablePan"],
-                        [boolCheck, "enable-rotate", "enableRotate"],
-                        [boolCheck, "enable-zoom", "enableZoom"],
-                        [numberCheck, "key-pan-speed", "keyPanSpeed"],
-                        [numberCheck, "max-azimuth-angle", "maxAzimuthAngle"],
-                        [numberCheck, "max-distance", "maxDistance"],
-                        [numberCheck, "max-polar-angle", "maxPolarAngle"],
-                        [numberCheck, "max-zoom", "maxZoom"],
-                        [numberCheck, "min-azimuth-angle", "minAzimuthAngle"],
-                        [numberCheck, "min-distance", "minDistance"],
-                        [numberCheck, "min-polar-angle", "minPolarAngle"],
-                        [numberCheck, "min-zoom", "minZoom"],
-                        [numberCheck, "pan-speed", "panSpeed"],
-                        [numberCheck, "rotate-speed", "rotateSpeed"],
-                        [boolCheck, "screen-space-panning", "screenSpacePanning"],
-                    ]);
-                    ["left", "right", "up", "bottom"].forEach(i => {
-                        if (attr2("key-" + i)) orbitControls.keys[i.toUpperCase()] = attr2("key-" + i.toUpperCase());
-                    });
-                    ["left", "right", "middle"].forEach(i => {
-                        if (mouseActions[attr2("mouse-" + i)]) orbitControls.mouseButtons[i.toUpperCase()] = mouseActions[attr2("mouse-" + i)];
-                    });
-                    ["one", "two"].forEach(i => {
-                        if (mouseActions[attr2("touch-" + i)]) orbitControls.touches[i.toUpperCase()] = mouseActions[attr2("touch-" + i)];
-                    });
-                    orbitControls.__html3d = element;
-                    h3d.orbitControls.push(orbitControls);
-                    break;
-                case "ARCBALL-CONTROLS":
-                    await loadLibrary(_ => THREE.ArcballControls, "ArcballControls", "https://threejs.org/examples/js/controls/ArcballControls.js");
-                    const arcballControls = new THREE.ArcballControls(camera, renderer.domElement);
-                    processAttributes(arcballControls, attr2, [
-                        [boolCheck, "adjust-near-far", "adjustNearFar"],
-                        [boolCheck, "cursor-zoom", "cursorZoom"],
-                        [numberCheck, "damping-factor", "dampingFactor"],
-                        [boolCheck, "enabled", "enabled"],
-                        [boolCheck, "enable-animations", "enableAnimations"],
-                        [boolCheck, "enable-grid", "enableGrid"],
-                        [boolCheck, "enable-pan", "enablePan"],
-                        [boolCheck, "enable-rotate", "enableRotate"],
-                        [boolCheck, "enable-zoom", "enableZoom"],
-                        [numberCheck, "focus-animation-time", "focusAnimationTime"],
-                        [numberCheck, "max-distance", "maxDistance"],
-                        [numberCheck, "max-zoom", "maxZoom"],
-                        [numberCheck, "min-distance", "minDistance"],
-                        [numberCheck, "min-zoom", "minZoom"],
-                        [numberCheck, "scale-factor", "scaleFactor"],
-                        [numberCheck, "w-max", "wMax"],
-                        [numberCheck, "radius-factor", "radiusFactor"],
-                    ]);
-                    arcballControls.__html3d = element;
-                    h3d.arcballControls.push(arcballControls);
-                    break;
-                case "FLY-CONTROLS":
-                    await loadLibrary(_ => THREE.FlyControls, "FlyControls", "https://threejs.org/examples/js/controls/FlyControls.js");
-                    const flyControls = new THREE.FlyControls(camera, renderer.domElement);
-                    processAttributes(flyControls, attr2, [
-                        [boolCheck, "auto-forward", "autoForward"],
-                        [boolCheck, "drag-to-look", "dragToLook"],
-                        [numberCheck, "movement-speed", "movementSpeed"],
-                        [numberCheck, "roll-speed", "rollSpeed"],
-                    ]);
-                    flyControls._clock = new THREE.Clock();
-                    flyControls.__html3d = element;
-                    h3d.flyControls.push(flyControls);
-                    break;
-                case "FIRST-PERSON-CONTROLS":
-                    await loadLibrary(_ => THREE.FirstPersonControls, "FirstPersonControls", "https://threejs.org/examples/js/controls/FirstPersonControls.js");
-                    const firstPersonControls = new THREE.FirstPersonControls(camera, renderer.domElement);
-                    processAttributes(firstPersonControls, attr2, [
-                        [boolCheck, "active-look", "activeLook"],
-                        [boolCheck, "auto-forward", "autoForward"],
-                        [boolCheck, "constrain-vertical", "constrainVertical"],
-                        [boolCheck, "enabled", "enabled"],
-                        [numberCheck, "height-coef", "heightCoef"],
-                        [numberCheck, "height-max", "heightMax"],
-                        [numberCheck, "height-min", "heightMin"],
-                        [numberCheck, "height-speed", "heightSpeed"],
-                        [boolCheck, "look-vertical", "lookVertical"],
-                        [numberCheck, "look-speed", "lookSpeed"],
-                        [boolCheck, "mouse-drag-on", "mouseDragOn"],
-                        [numberCheck, "movement-speed", "movementSpeed"],
-                        [numberCheck, "vertical-max", "verticalMax"],
-                        [numberCheck, "vertical-min", "verticalMin"],
-                    ]);
-                    firstPersonControls._clock = new THREE.Clock();
-                    firstPersonControls.__html3d = element;
-                    h3d.firstPersonControls.push(firstPersonControls);
-                    break;
-                case "POINTER-LOCK-CONTROLS":
-                    await loadLibrary(_ => THREE.PointerLockControls, "PointerLockControls", "https://threejs.org/examples/js/controls/PointerLockControls.js");
-                    const pointerLockControls = new THREE.PointerLockControls(camera, renderer.domElement);
-                    processAttributes(pointerLockControls, attr2, [
-                        [numberCheck, "max-polar-angle", "maxPolarAngle"],
-                        [numberCheck, "min-polar-angle", "minPolarAngle"],
-                        [numberCheck, "pointer-speed", "pointerSpeed"],
-                    ]);
-                    pointerLockControls.connect()
-                    pointerLockControls.__html3d = element;
-                    h3d.pointerLockControls.push(pointerLockControls);
-                    break;
-                case "TRACKBALL-CONTROLS":
-                    await loadLibrary(_ => THREE.TrackballControls, "TrackballControls", "https://threejs.org/examples/js/controls/TrackballControls.js");
-                    const trackballControls = new THREE.TrackballControls(camera, renderer.domElement);
-                    processAttributes(trackballControls, attr2, [
-                        [numberCheck, "dynamic-damping-factor", "dynamicDampingFactor"],
-                        [boolCheck, "enabled", "enabled"],
-                        [numberCheck, "max-distance", "maxDistance"],
-                        [numberCheck, "min-distance", "minDistance"],
-                        [boolCheck, "no-pan", "noPan"],
-                        [boolCheck, "no-zoom", "noZoom"],
-                        [numberCheck, "pan-speed", "panSpeed"],
-                        [numberCheck, "rotate-speed", "rotateSpeed"],
-                        [boolCheck, "static-moving", "staticMoving"],
-                        [numberCheck, "zoom-speed", "zoomSpeed"]
-                    ]);
-                    trackballControls.keys = [
-                        stringCheck(attr2("key-orbit"), "KeyA"),
-                        stringCheck(attr2("key-zoom"), "KeyS"),
-                        stringCheck(attr2("key-pan"), "KeyD")
-                    ];
-                    ["left", "right", "middle"].forEach(i => {
-                        if (mouseActions[attr2("mouse-" + i)]) trackballControls.mouseButtons[i.toUpperCase()] = mouseActions[attr2("mouse-" + i)];
-                    });
-                    trackballControls.__html3d = element;
-                    h3d.trackballControls.push(trackballControls);
-                    break;
-                case "FONT":
-                    if (!fontLoader) {
-                        await loadLibrary(_ => THREE.FontLoader.prototype.load, "FontLoader", "https://threejs.org/examples/js/loaders/FontLoader.js")
-                        fontLoader = new THREE.FontLoader();
-                    }
-                    const font = await new Promise(r => fontLoader.load(attr2("src"), r, _ => _, _ => r(null)));
-                    if (!font) {
-                        console.error("Failed to load font: " + attr2("src"));
-                        continue;
-                    }
-                    font.__html3d = element;
-                    h3d.fonts.push({
-                        src: attr2("src"), name: attr2("name"), familyName: font.data.familyName, font
-                    });
-                    break;
-            }
+            const tagName = tagNameToName(element.tagName);
+            if (build[tagName]) await build[tagName](h3d, element);
         }
         camera.rotation.set(numberCheck(attr("rotation-x"), 0), numberCheck(attr("rotation-y"), 0), numberCheck(attr("rotation-z"), 0));
         camera.position.set(numberCheck(attr("x"), 0), numberCheck(attr("y"), 0), numberCheck(attr("z"), 0));
