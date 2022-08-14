@@ -1,6 +1,7 @@
 // noinspection JSUnusedGlobalSymbols
 
 const __eval = [];
+// DO NOT SET THIS METHOD AS _eval PROPERTY OF THE LIBRARY, IT WON'T WORK SINCE ITS ASYNC
 const _eval = code => new Promise(r => __eval.push([code, r]));
 setInterval(() => {
     __eval.forEach(([code, r]) => {
@@ -13,15 +14,16 @@ setInterval(() => {
     });
     __eval.length = 0;
 });
+const _eval2 = code => eval(code);
 (async () => {
     const elementAssignments = new Map();
     const loadPromise = new Promise(r => addEventListener("load", r));
-    const allChildrens = element => {
+    const allChildren = element => {
         const children = element.children;
         const childrens = [];
         for (let i = 0; i < children.length; i++) {
             childrens.push(children[i]);
-            childrens.push(...allChildrens(children[i]));
+            childrens.push(...allChildren(children[i]));
         }
         return childrens;
     };
@@ -107,7 +109,7 @@ setInterval(() => {
         };
 
         findById(id) {
-            return allChildrens(this.element).find(e => e.id === id);
+            return allChildren(this.element).find(e => e.id === id);
         };
 
         findByClass(className) {
@@ -119,7 +121,7 @@ setInterval(() => {
         };
 
         findByName(name) {
-            return allChildrens(this.element).find(e => e.name === name);
+            return allChildren(this.element).find(e => e.name === name);
         };
 
         findByQuery(query) {
@@ -215,7 +217,8 @@ setInterval(() => {
         findById: (id) => html3ds.find(r => r.element.id === id),
         warnings: window.html3d?.warnings || {
             loadStart: false, loadEnd: true
-        }
+        },
+        _eval: _eval2
     };
     await loadPromise;
     const els = document.querySelectorAll("html3d");
@@ -250,7 +253,7 @@ setInterval(() => {
                 floor, ceil, round, sign, PI, LN2, E, cosh, cbrt, imul, sinh, LN10, acosh, tanh, asinh, atanh,
                 hypot, clz32, expm1, fround, log1p, LOG2E, LOG10E, random, SQRT1_2, SQRT2, trunc
             } = Math;
-            if ([..."+-*/^()"].some(i => a.includes(i))) a = eval(a).toString();
+            if ([..."+-*/^()"].some(i => a.includes(i))) a = html3d._eval(a).toString();
         } catch (e) {
         }
         return isNaN(a * 1) ? b : a * 1;
@@ -282,7 +285,7 @@ setInterval(() => {
     };
     const codeCheck = (a, b) => {
         try {
-            return eval(a);
+            return html3d._eval(a);
         } catch (e) {
             return b;
         }
@@ -396,7 +399,7 @@ setInterval(() => {
                     } = Math;
                     // noinspection JSUnusedLocalSymbols
                     const pi = PI;
-                    eval(variables[action[0]] + action[1] + action[2]);
+                    html3d._eval(variables[action[0]] + action[1] + action[2]);
                 } catch (e) {
                     actions = actions.filter(a => a !== action);
                     return console.error(`[BEHAVIOR] Couldn't parse the value at line ${action[3] + 1}: ${action[2]}`);
