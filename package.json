@@ -1,0 +1,30 @@
+{
+  "name": "html3d",
+  "version": "1.0.1",
+  "description": "3D rendering implementation to HTML made with three.js",
+  "main": "html3d.min.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OguzhanUmutlu/html3d.git"
+  },
+  "keywords": [
+    "html",
+    "3d",
+    "three",
+    "javascript",
+    "threejs",
+    "three.js",
+    "html3d"
+  ],
+  "author": "OguzhanUmutlu",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/OguzhanUmutlu/html3d/issues"
+  },
+  "homepage": "https://github.com/OguzhanUmutlu/html3d#readme"
+}
