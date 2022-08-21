@@ -818,59 +818,62 @@ const _eval2 = code => eval(code);
                 if (mouseActions[attr("mouse-" + i)]) obj.mouseButtons[i.toUpperCase()] = mouseActions[attr("mouse-" + i)];
             });
         },
+        Group: (obj, attr) => {
+            applyAttributes.Object3D(obj, attr);
+        },
     };
     const tagNameToName = tagName => tagName.split("-").map(word => word.charAt(0).toUpperCase() + word.substring(1).toLowerCase()).join("");
     const build = {
-        BoxGeometry: async (h3d, element, assign = true) => {
+        BoxGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.BoxGeometry(numberCheck(attr("width"), 1), numberCheck(attr("height"), 1), numberCheck(attr("depth"), 1), numberCheck(attr("widthSegments"), 1), numberCheck(attr("heightSegments"), 1), numberCheck(attr("depthSegments"), 1));
             applyAttributes.BoxGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        CapsuleGeometry: async (h3d, element, assign = true) => {
+        CapsuleGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.CapsuleGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("length"), 1), numberCheck(attr("cap-subdivisions"), 8), numberCheck(attr("radial-segments"), 16));
             applyAttributes.CapsuleGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        CircleGeometry: async (h3d, element, assign = true) => {
+        CircleGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.CircleGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("segments"), 8), numberCheck(attr("theta-start"), 0), numberCheck(attr("theta-length"), 2 * Math.PI));
             applyAttributes.CircleGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        ConeGeometry: async (h3d, element, assign = true) => {
+        ConeGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.ConeGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("height"), 1), numberCheck(attr("radial-segments"), 8), numberCheck(attr("height-segments"), 1), boolCheck(attr("open-ended"), false), numberCheck(attr("theta-start"), 0), numberCheck(attr("theta-length"), 2 * Math.PI));
             applyAttributes.ConeGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        CylinderGeometry: async (h3d, element, assign = true) => {
+        CylinderGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.CylinderGeometry(numberCheck(attr("radius-top"), 1), numberCheck(attr("radius-bottom"), 1), numberCheck(attr("height"), 1), numberCheck(attr("radial-segments"), 8), numberCheck(attr("height-segments"), 1), boolCheck(attr("open-ended"), false), numberCheck(attr("theta-start"), 0), numberCheck(attr("theta-length"), 2 * Math.PI));
             applyAttributes.CylinderGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        DodecahedronGeometry: async (h3d, element, assign = true) => {
+        DodecahedronGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.DodecahedronGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("detail"), 0));
             applyAttributes.DodecahedronGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        IcosahedronGeometry: async (h3d, element, assign = true) => {
+        IcosahedronGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.IcosahedronGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("detail"), 0));
             applyAttributes.IcosahedronGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        LatheGeometry: async (h3d, element, assign = true) => {
+        LatheGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             // BROKEN
             const points = Array.from(element.children).filter(i => i.tagName === "POINT").map(i => new THREE.Vector2(numberCheck(i.getAttribute("x"), 0), numberCheck(i.getAttribute("y"), 0)));
@@ -879,28 +882,28 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        OctahedronGeometry: async (h3d, element, assign = true) => {
+        OctahedronGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.OctahedronGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("detail"), 0));
             applyAttributes.OctahedronGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        PlaneGeometry: async (h3d, element, assign = true) => {
+        PlaneGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.PlaneGeometry(numberCheck(attr("width"), 1), numberCheck(attr("height"), 1), numberCheck(attr("width-segments"), 1), numberCheck(attr("height-segments"), 1));
             applyAttributes.PlaneGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        RingGeometry: async (h3d, element, assign = true) => {
+        RingGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.RingGeometry(numberCheck(attr("inner-radius"), 0.5), numberCheck(attr("outer-radius"), 1), numberCheck(attr("theta-segments"), 8), numberCheck(attr("phi-segments"), 1), numberCheck(attr("theta-start"), 0), numberCheck(attr("theta-length"), 2 * Math.PI));
             applyAttributes.RingGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        ShapeGeometry: async (h3d, element, assign = true) => {
+        ShapeGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const shape = processShape(Array.from(element.children).filter(i => i.tagName === "SHAPE").reverse()[0]);
             if (!shape) return console.error("ShapeGeometry: No <shape> found");
@@ -909,14 +912,14 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        SphereGeometry: async (h3d, element, assign = true) => {
+        SphereGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.SphereGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("width-segments"), 32), numberCheck(attr("height-segments"), 16), numberCheck(attr("phi-start"), 0), numberCheck(attr("phi-length"), Math.PI * 2), numberCheck(attr("theta-start"), 0), numberCheck(attr("theta-length"), 2 * Math.PI));
             applyAttributes.SphereGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        TetrahedronGeometry: async (h3d, element, assign = true) => {
+        TetrahedronGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.TetrahedronGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("detail"), 0));
             applyAttributes.TetrahedronGeometry(geometry, attr);
@@ -924,21 +927,21 @@ const _eval2 = code => eval(code);
             return geometry;
         },
         //amougs
-        TorusGeometry: async (h3d, element, assign = true) => {
+        TorusGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.TorusGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("tube"), 0.4), numberCheck(attr("radial-segments"), 8), numberCheck(attr("tubular-segments"), 6), numberCheck(attr("arc"), Math.PI * 2));
             applyAttributes.TorusGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        TorusKnotGeometry: async (h3d, element, assign = true) => {
+        TorusKnotGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const geometry = new THREE.TorusKnotGeometry(numberCheck(attr("radius"), 1), numberCheck(attr("tube"), 0.4), numberCheck(attr("tubular-segments"), 64), numberCheck(attr("radial-segments"), 8), numberCheck(attr("p"), 2), numberCheck(attr("q"), 3));
             applyAttributes.TorusKnotGeometry(geometry, attr);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        TubeGeometry: async (h3d, element, assign = true) => {
+        TubeGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const curve = processCurve(Array.from(element.children).filter(i => i.tagName === "CURVE").reverse()[0]);
             if (!curve) return console.error("TubeGeometry: No <curve> found");
@@ -947,7 +950,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        ConvexGeometry: async (h3d, element, assign = true) => {
+        ConvexGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             await loadLibrary(_ => THREE.ConvexHull, "ConvexHull", "https://threejs.org/examples/js/math/ConvexHull.js");
             await loadLibrary(_ => THREE.ConvexGeometry, "ConvexGeometry", "https://threejs.org/examples/js/geometries/ConvexGeometry.js");
@@ -957,7 +960,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        TextGeometry: async (h3d, element, assign = true) => {
+        TextGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             await loadLibrary(_ => !THREE.TextGeometry.toString().includes("console.error"), "TextGeometry", "https://threejs.org/examples/js/geometries/TextGeometry.js");
             const font = h3d.fonts.find(i => [i.name, i.src].includes(stringCheck(attr("font")))) || h3d.fonts.find(i => i.familyName === stringCheck(attr("font")));
@@ -978,7 +981,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, geometry);
             return geometry;
         },
-        MeshBasicMaterial: async (h3d, element, assign = true) => {
+        MeshBasicMaterial: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const obj = {};
             applyAttributes.MeshBasicMaterial(obj, attr);
@@ -986,7 +989,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, material);
             return material;
         },
-        MeshPhongMaterial: async (h3d, element, assign = true) => {
+        MeshPhongMaterial: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const obj = {};
             applyAttributes.MeshPhongMaterial(obj, attr);
@@ -994,7 +997,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, material);
             return material;
         },
-        LineBasicMaterial: async (h3d, element, assign = true) => {
+        LineBasicMaterial: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const obj = {};
             applyAttributes.LineBasicMaterial(obj, attr);
@@ -1002,7 +1005,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, material);
             return material;
         },
-        LineDashedMaterial: async (h3d, element, assign = true) => {
+        LineDashedMaterial: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const obj = {};
             applyAttributes.LineDashedMaterial(obj, attr);
@@ -1010,7 +1013,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, material);
             return material;
         },
-        MeshDepthMaterial: async (h3d, element, assign = true) => {
+        MeshDepthMaterial: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const obj = {};
             applyAttributes.MeshDepthMaterial(obj, attr);
@@ -1018,7 +1021,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, material);
             return material;
         },
-        Mesh: async (h3d, element, assign = true) => {
+        Mesh: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const findM = end => {
                 const g = Array.from(element.children).filter(i => i.tagName.endsWith(end) && build[tagNameToName(i.tagName)]).reverse()[0];
@@ -1031,74 +1034,74 @@ const _eval2 = code => eval(code);
             const mesh = new THREE.Mesh(geometry, material);
             processBehavior(mesh, attr("behavior"), h3d);
             applyAttributes.Object3D(mesh, attr);
-            if (boolCheck(attr("register"), true)) h3d.scene.add(mesh);
+            if (boolCheck(attr("register"), true)) scene.add(mesh);
             if (assign) elementAssignments.set(element, mesh);
             return mesh;
         },
-        PointLight: async (h3d, element, assign = true) => {
+        PointLight: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const light = new THREE.PointLight();
             processBehavior(light, attr("behavior"), h3d);
             applyAttributes.PointLight(light, attr);
-            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (boolCheck(attr("register"), true)) scene.add(light);
             if (assign) elementAssignments.set(element, light);
             return light;
         },
-        AmbientLight: async (h3d, element, assign = true) => {
+        AmbientLight: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const light = new THREE.AmbientLight();
             processBehavior(light, attr("behavior"), h3d);
             applyAttributes.AmbientLight(light, attr);
-            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (boolCheck(attr("register"), true)) scene.add(light);
             if (assign) elementAssignments.set(element, light);
             return light;
         },
-        AmbientLightProbe: async (h3d, element, assign = true) => {
+        AmbientLightProbe: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const light = new THREE.AmbientLightProbe();
             processBehavior(light, attr("behavior"), h3d);
             applyAttributes.AmbientLightProbe(light, attr);
-            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (boolCheck(attr("register"), true)) scene.add(light);
             if (assign) elementAssignments.set(element, light);
             return light;
         },
-        DirectionalLight: async (h3d, element, assign = true) => {
+        DirectionalLight: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const light = new THREE.DirectionalLight();
             processBehavior(light, attr("behavior"), h3d);
             applyAttributes.DirectionalLight(light, attr);
-            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (boolCheck(attr("register"), true)) scene.add(light);
             if (assign) elementAssignments.set(element, light);
             return light;
         },
-        HemisphereLight: async (h3d, element, assign = true) => {
+        HemisphereLight: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const light = new THREE.HemisphereLight();
             processBehavior(light, attr("behavior"), h3d);
             applyAttributes.HemisphereLight(light, attr);
-            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (boolCheck(attr("register"), true)) scene.add(light);
             if (assign) elementAssignments.set(element, light);
             return light;
         },
-        RectAreaLight: async (h3d, element, assign = true) => {
+        RectAreaLight: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const light = new THREE.RectAreaLight();
             processBehavior(light, attr("behavior"), h3d);
             applyAttributes.RectAreaLight(light, attr);
-            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (boolCheck(attr("register"), true)) scene.add(light);
             if (assign) elementAssignments.set(element, light);
             return light;
         },
-        SpotLight: async (h3d, element, assign = true) => {
+        SpotLight: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             const light = new THREE.SpotLight();
             processBehavior(light, attr("behavior"), h3d);
             applyAttributes.SpotLight(light, attr);
-            if (boolCheck(attr("register"), true)) h3d.scene.add(light);
+            if (boolCheck(attr("register"), true)) scene.add(light);
             if (assign) elementAssignments.set(element, light);
             return light;
         },
-        OrbitControls: async (h3d, element, assign = true) => {
+        OrbitControls: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             await loadLibrary(_ => THREE.OrbitControls, "OrbitControls", "https://threejs.org/examples/js/controls/OrbitControls.js");
             const orbitControls = new THREE.OrbitControls(h3d.camera, h3d.renderer.domElement);
@@ -1107,7 +1110,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, orbitControls);
             return orbitControls;
         },
-        ArcballControls: async (h3d, element, assign = true) => {
+        ArcballControls: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             await loadLibrary(_ => THREE.ArcballControls, "ArcballControls", "https://threejs.org/examples/js/controls/ArcballControls.js");
             const arcballControls = new THREE.ArcballControls(h3d.camera, h3d.renderer.domElement);
@@ -1116,7 +1119,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, arcballControls);
             return arcballControls;
         },
-        FlyControls: async (h3d, element, assign = true) => {
+        FlyControls: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             await loadLibrary(_ => THREE.FlyControls, "FlyControls", "https://threejs.org/examples/js/controls/FlyControls.js");
             const flyControls = new THREE.FlyControls(h3d.camera, h3d.renderer.domElement);
@@ -1125,7 +1128,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, flyControls);
             return flyControls;
         },
-        FirstPersonControls: async (h3d, element, assign = true) => {
+        FirstPersonControls: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             await loadLibrary(_ => THREE.FirstPersonControls, "FirstPersonControls", "https://threejs.org/examples/js/controls/FirstPersonControls.js");
             const firstPersonControls = new THREE.FirstPersonControls(h3d.camera, h3d.renderer.domElement);
@@ -1134,7 +1137,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, firstPersonControls);
             return firstPersonControls;
         },
-        PointerLockControls: async (h3d, element, assign = true) => {
+        PointerLockControls: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             await loadLibrary(_ => THREE.PointerLockControls, "PointerLockControls", "https://threejs.org/examples/js/controls/PointerLockControls.js");
             const pointerLockControls = new THREE.PointerLockControls(h3d.camera, h3d.renderer.domElement);
@@ -1144,7 +1147,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, pointerLockControls);
             return pointerLockControls;
         },
-        TrackballControls: async (h3d, element, assign = true) => {
+        TrackballControls: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             await loadLibrary(_ => THREE.TrackballControls, "TrackballControls", "https://threejs.org/examples/js/controls/TrackballControls.js");
             const trackballControls = new THREE.TrackballControls(h3d.camera, h3d.renderer.domElement);
@@ -1153,7 +1156,7 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, trackballControls);
             return trackballControls;
         },
-        Font: async (h3d, element, assign = true) => {
+        Font: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             if (!fontLoader) {
                 await loadLibrary(_ => THREE.FontLoader.prototype.load, "FontLoader", "https://threejs.org/examples/js/loaders/FontLoader.js")
@@ -1168,6 +1171,21 @@ const _eval2 = code => eval(code);
             if (assign) elementAssignments.set(element, font);
             return font;
         },
+        Group: async (h3d, element, assign = true, scene = h3d.scene) => {
+            const attr = s => element.getAttribute(s);
+            const group = new THREE.Group();
+            processBehavior(group, attr("behavior"), h3d);
+            await applyAttributes.Group(group, attr);
+            const elements = Array.from(element.children);
+            for (let i = 0; i < elements.length; i++) {
+                const element2 = elements[i];
+                const tagName = tagNameToName(element2.tagName);
+                if (build[tagName]) await build[tagName](h3d, element2, assign, group);
+            }
+            if (boolCheck(attr("register"), true)) scene.add(group);
+            if (assign) elementAssignments.set(element, group);
+            return group;
+        }
     };
     let fontLoader;
     const mouseActions = {

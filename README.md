@@ -253,6 +253,6 @@ Actions: **=, |=, &=, +=, -=, *=, /=
 - [ ] SVG loader
 - [ ] TGA loader
 
-## Miscellaneous 0/1
+## Miscellaneous 1/1
 
-- [ ] Groups
+- [X] Groups

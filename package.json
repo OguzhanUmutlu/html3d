@@ -1,6 +1,6 @@
 {
   "name": "html3d",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "3D rendering implementation to HTML made with three.js",
   "main": "html3d.min.js",
   "directories": {
