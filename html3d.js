@@ -14,7 +14,7 @@ setInterval(() => {
     });
     __eval.length = 0;
 });
-const _eval2 = code => eval(code);
+const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `const ${_}=___args___[${JSON.stringify(_)}];`).join("")}${code}`);
 (async () => {
     const elementAssignments = new Map();
     const loadPromise = new Promise(r => addEventListener("load", r));
@@ -253,7 +253,11 @@ const _eval2 = code => eval(code);
                 floor, ceil, round, sign, PI, LN2, E, cosh, cbrt, imul, sinh, LN10, acosh, tanh, asinh, atanh,
                 hypot, clz32, expm1, fround, log1p, LOG2E, LOG10E, random, SQRT1_2, SQRT2, trunc
             } = Math;
-            if ([..."+-*/^()"].some(i => a.includes(i))) a = html3d._eval(a).toString();
+            if ([..."+-*/^()"].some(i => a.includes(i))) a = html3d._eval(a, {
+                sin, cos, tan, asin, acos, atan, atan2, sqrt, pow, abs, log, log2, log10, exp, min, max,
+                floor, ceil, round, sign, PI, LN2, E, cosh, cbrt, imul, sinh, LN10, acosh, tanh, asinh, atanh,
+                hypot, clz32, expm1, fround, log1p, LOG2E, LOG10E, random, SQRT1_2, SQRT2, trunc
+            }).toString();
         } catch (e) {
         }
         return isNaN(a * 1) ? b : a * 1;
@@ -397,15 +401,15 @@ const _eval2 = code => eval(code);
         if (!behavior) return;
         let actions = [];
         const variables = {
-            x: "obj.position.x",
-            y: "obj.position.y",
-            z: "obj.position.z",
-            rx: "obj.rotation.x",
-            ry: "obj.rotation.y",
-            rz: "obj.rotation.z",
-            sx: "obj.scale.x",
-            sy: "obj.scale.y",
-            sz: "obj.scale.z",
+            x: "object.position.x",
+            y: "object.position.y",
+            z: "object.position.z",
+            rx: "object.rotation.x",
+            ry: "object.rotation.y",
+            rz: "object.rotation.z",
+            sx: "object.scale.x",
+            sy: "object.scale.y",
+            sz: "object.scale.z",
         };
         const lines = behavior.split(";");
         for (let i = 0; i < lines.length; i++) {
@@ -434,7 +438,7 @@ const _eval2 = code => eval(code);
                     } = Math;
                     // noinspection JSUnusedLocalSymbols
                     const pi = PI;
-                    html3d._eval(variables[action[0]] + action[1] + action[2]);
+                    html3d._eval(variables[action[0]] + action[1] + action[2], {object: obj});
                 } catch (e) {
                     actions = actions.filter(a => a !== action);
                     return console.error(`[BEHAVIOR] Couldn't parse the value at line ${action[3] + 1}: ${action[2]}`);
