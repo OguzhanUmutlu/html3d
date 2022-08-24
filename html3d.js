@@ -16,6 +16,17 @@ setInterval(() => {
 });
 const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `const ${_}=___args___[${JSON.stringify(_)}];`).join("")}${code}`);
 (async () => {
+    let pr;
+    const promise = new Promise(l => pr = l);
+    window.html3d = {
+        version: "1.0.5",
+        promise,
+        findById: (id) => html3ds.find(r => r.element.id === id),
+        warnings: window.html3d?.warnings || {
+            loadStart: false, loadEnd: true
+        },
+        _eval: _eval2
+    };
     const elementAssignments = new Map();
     const loadPromise = new Promise(r => addEventListener("load", r));
     const allChildren = element => {
@@ -201,24 +212,12 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
             this._listeners[event] = listeners.filter(l => l[1]);
         };
     }
-
+    /*** @type {HTML3D[]} */
+    const html3ds = [];
     addEventListener("resize", () => html3ds.forEach(html3d => html3d.onResize()));
-
     const renderAll = () => {
         for (let i = 0; i < html3ds.length; i++) if (html3ds[i].rendering) html3ds[i].render();
         requestAnimationFrame(renderAll);
-    };
-    /*** @type {HTML3D[]} */
-    const html3ds = [];
-    let pr;
-    const promise = new Promise(l => pr = l);
-    window.html3d = {
-        promise,
-        findById: (id) => html3ds.find(r => r.element.id === id),
-        warnings: window.html3d?.warnings || {
-            loadStart: false, loadEnd: true
-        },
-        _eval: _eval2
     };
     await loadPromise;
     const els = document.querySelectorAll("html3d");
