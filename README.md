@@ -123,7 +123,7 @@ Note: The origin of the world is 0-0-0.
 
 Changeable variables: x(position x), y, z, rx(rotation x), ry, rz, sx(scale x), sy, sz
 
-Actions: **=, |=, &=, +=, -=, *=, /=
+Actions: `**=`, `|=`, `&=`, `+=`, `-=`, `*=`, `/=`
 
 ```html
 <html3d maximize center z="5">

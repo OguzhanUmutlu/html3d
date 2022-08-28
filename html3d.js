@@ -16,15 +16,19 @@ setInterval(() => {
 });
 const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `const ${_}=___args___[${JSON.stringify(_)}];`).join("")}${code}`);
 (async () => {
+    /*** @type {Object | Window} */
+    const exports = typeof module !== "undefined" && typeof require !== "undefined" ? (module.exports = {}) : window;
     let pr;
     const promise = new Promise(l => pr = l);
-    window.html3d = {
-        version: "1.0.5",
+    exports.html3d = {
+        version: "1.0.6",
         promise,
         findById: (id) => html3ds.find(r => r.element.id === id),
-        warnings: window.html3d?.warnings || {
+        warnings: exports.html3d?.warnings || {
             loadStart: false, loadEnd: true
         },
+        width: exports.innerWidth || 500,
+        height: exports.innerHeight || 400,
         _eval: _eval2
     };
     const elementAssignments = new Map();
@@ -107,10 +111,12 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
         };
 
         onResize() {
+            exports.html3d.width = exports.innerWidth || exports.html3d.width;
+            exports.html3d.height = exports.innerHeight || exports.html3d.height;
             this.emit("resize");
             if (this.maximized) {
-                this.canvas.width = window.innerWidth;
-                this.canvas.height = window.innerHeight;
+                this.canvas.width = exports.html3d.width;
+                this.canvas.height = exports.html3d.height;
             }
             const {width, height} = this.canvas;
             this.camera.aspect = width / height;
@@ -212,6 +218,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
             this._listeners[event] = listeners.filter(l => l[1]);
         };
     }
+
     /*** @type {HTML3D[]} */
     const html3ds = [];
     addEventListener("resize", () => html3ds.forEach(html3d => html3d.onResize()));
@@ -233,9 +240,9 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
                 throw new Error();
             }
         } catch (e) {
-            if (html3d.warnings.loadStart) console.info("%cCouldn't find " + name + ", trying to load it...", "color:#ff0000");
+            if (exports.html3d.warnings.loadStart) console.info("%cCouldn't find " + name + ", trying to load it...", "color:#ff0000");
             await loadScript(src);
-            if (html3d.warnings.loadEnd) console.info("%c" + name + " has been loaded.", "color:#00ff00");
+            if (exports.html3d.warnings.loadEnd) console.info("%c" + name + " has been loaded.", "color:#00ff00");
         }
     };
     await loadLibrary(_ => THREE, "ThreeJS", "https://threejs.org/build/three.min.js");
@@ -252,7 +259,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
                 floor, ceil, round, sign, PI, LN2, E, cosh, cbrt, imul, sinh, LN10, acosh, tanh, asinh, atanh,
                 hypot, clz32, expm1, fround, log1p, LOG2E, LOG10E, random, SQRT1_2, SQRT2, trunc
             } = Math;
-            if ([..."+-*/^()"].some(i => a.includes(i))) a = html3d._eval(a, {
+            if ([..."+-*/^()"].some(i => a.includes(i))) a = exports.html3d._eval(a, {
                 sin, cos, tan, asin, acos, atan, atan2, sqrt, pow, abs, log, log2, log10, exp, min, max,
                 floor, ceil, round, sign, PI, LN2, E, cosh, cbrt, imul, sinh, LN10, acosh, tanh, asinh, atanh,
                 hypot, clz32, expm1, fround, log1p, LOG2E, LOG10E, random, SQRT1_2, SQRT2, trunc
@@ -323,7 +330,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
     };
     const codeCheck = (a, b) => {
         try {
-            return html3d._eval(a);
+            return exports.html3d._eval(a);
         } catch (e) {
             return b;
         }
@@ -437,7 +444,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
                     } = Math;
                     // noinspection JSUnusedLocalSymbols
                     const pi = PI;
-                    html3d._eval(variables[action[0]] + action[1] + action[2], {object: obj});
+                    exports.html3d._eval(variables[action[0]] + action[1] + action[2], {object: obj});
                 } catch (e) {
                     actions = actions.filter(a => a !== action);
                     return console.error(`[BEHAVIOR] Couldn't parse the value at line ${action[3] + 1}: ${action[2]}`);
