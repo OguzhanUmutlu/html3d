@@ -46,7 +46,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
     let pr;
     const promise = new Promise(l => pr = l);
     exports.html3d = {
-        version: "1.0.6",
+        version: "1.0.9",
         promise,
         findById: (id) => html3ds.find(r => r.element.id === id),
         warnings: exports.html3d?.warnings || {
