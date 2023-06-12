@@ -1,9 +1,9 @@
-<title>The rock</title>
+<title>A torus knot</title>
 <script src="../html3d.js"></script>
-<html3d id="hello" maximize center z="5">
+<html3d maximize center z="5">
     <mesh>
-        <tetrahedron-geometry detail="2"></tetrahedron-geometry>
-        <mesh-phong-material color="#156289" emissive="#072534"></mesh-phong-material>
+        <torus-knot-geometry tubular-segments="128" radial-segments="16"></torus-knot-geometry>
+        <mesh-phong-material color="0x156289" emissive="0x072534" side="double"></mesh-phong-material>
     </mesh>
     <point-light y="200"></point-light>
     <point-light x="100" y="200" z="100"></point-light>

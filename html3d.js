@@ -1,11 +1,10 @@
-// noinspection JSUnusedGlobalSymbols
+// noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols
 
 const __eval = [];
 // DO NOT SET THIS METHOD AS _eval PROPERTY OF THE LIBRARY, IT WON'T WORK SINCE ITS ASYNC
 const _eval = code => new Promise(r => __eval.push([code, r]));
 setInterval(() => {
     __eval.forEach(([code, r]) => {
-
         try {
             r({data: eval(code)});
         } catch (e) {
@@ -16,6 +15,32 @@ setInterval(() => {
 });
 const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `const ${_}=___args___[${JSON.stringify(_)}];`).join("")}${code}`);
 (async () => {
+    /*const URLS = {
+        THREE: "https://raw.githubusercontent.com/mrdoob/three.js/dev/build/three.js",
+        ConvexHull: "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/math/ConvexHull.js",
+        ConvexGeometry: "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/geometries/ConvexGeometry.js",
+        TextGeometry: "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/geometries/TextGeometry.js",
+        OrbitControls: "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/controls/OrbitControls.js",
+        ArcballControls: "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/controls/ArcballControls.js",
+        FlyControls: "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/controls/FlyControls.js",
+        FirstPersonControls: "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/controls/FirstPersonControls.js",
+        PointerLockControls: "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/controls/PointerLockControls.js",
+        TrackballControls: "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/controls/TrackballControls.js",
+        FontLoader: "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/js/loaders/FontLoader.js"
+    };*/
+    const URLS = {
+        THREE: "https://unpkg.com/html3d/libs/three.min.js",
+        ConvexHull: "https://unpkg.com/html3d/libs/ConvexHull.min.js",
+        ConvexGeometry: "https://unpkg.com/html3d/libs/ConvexGeometry.min.js",
+        TextGeometry: "https://unpkg.com/html3d/libs/TextGeometry.min.js",
+        OrbitControls: "https://unpkg.com/html3d/libs/OrbitControls.min.js",
+        ArcballControls: "https://unpkg.com/html3d/libs/ArcballControls.min.js",
+        FlyControls: "https://unpkg.com/html3d/libs/FlyControls.min.js",
+        FirstPersonControls: "https://unpkg.com/html3d/libs/FirstPersonControls.min.js",
+        PointerLockControls: "https://unpkg.com/html3d/libs/PointerLockControls.min.js",
+        TrackballControls: "https://unpkg.com/html3d/libs/TrackballControls.min.js",
+        FontLoader: "https://unpkg.com/html3d/libs/FontLoader.min.js"
+    };
     /*** @type {Object | Window} */
     const exports = typeof module !== "undefined" && typeof require !== "undefined" ? (module.exports = {}) : window;
     let pr;
@@ -231,13 +256,16 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
     const loadScript = src => new Promise(l => {
         const script = document.createElement("script");
         script.src = src;
-        script.onload = l;
-        document.head.appendChild(script);
+        script.onload = () => {
+            l();
+            script.remove();
+        };
+        document.body.appendChild(script);
     });
     const loadLibrary = async (fn, name, src) => {
         try {
             if (!(await fn())) { // noinspection ExceptionCaughtLocallyJS
-                throw new Error();
+                throw new Error;
             }
         } catch (e) {
             if (exports.html3d.warnings.loadStart) console.info("%cCouldn't find " + name + ", trying to load it...", "color:#ff0000");
@@ -245,7 +273,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
             if (exports.html3d.warnings.loadEnd) console.info("%c" + name + " has been loaded.", "color:#00ff00");
         }
     };
-    await loadLibrary(_ => THREE, "ThreeJS", "https://threejs.org/build/three.min.js");
+    await loadLibrary(_ => THREE, "ThreeJS", URLS.THREE); // "/build/three.min.js"
     const {Scene, PerspectiveCamera, WebGLRenderer} = THREE;
     const sides = {front: THREE.FrontSide, back: THREE.BackSide, double: THREE.DoubleSide};
     const numberCheck = (a, b) => {
@@ -420,17 +448,16 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
         const lines = behavior.split(";");
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
-            if (line) {
-                if (!/^\s*\w+\s*((\*\*)|\||&|[+\-*/])?\s*=\s*.+$/.test(line)) {
-                    console.error(`[BEHAVIOR] Invalid behavior at line ${i + 1}: ${line}`);
-                } else {
-                    const equal = line.indexOf("=");
-                    const varName = line.substring(0, equal - 1).trim();
-                    const action = line.substring(varName.length, equal + 1).trim();
-                    const varValue = line.substring(equal + 1).trim();
-                    if (!variables[varName]) return console.error(`[BEHAVIOR] Couldn't find the variable named ${varName} at line ${i + 1}: ${line}\nNote: Variables: ${Object.keys(variables).join()}`);
-                    actions.push([varName, action, varValue, i, line]);
-                }
+            if (!line) continue;
+            if (!/^\s*\w+\s*((\*\*)|\||&|[+\-*/])?\s*=\s*.+$/.test(line)) {
+                console.error(`[BEHAVIOR] Invalid behavior at line ${i + 1}: ${line}`); // todo: perhaps, don't use regex
+            } else {
+                const equal = line.indexOf("=");
+                const varName = line.substring(0, equal - 1).trim();
+                const action = line.substring(varName.length, equal + 1).trim();
+                const varValue = line.substring(equal + 1).trim();
+                if (!variables[varName]) return console.error(`[BEHAVIOR] Couldn't find the variable named ${varName} at line ${i + 1}: ${line}\nNote: Variables: ${Object.keys(variables).join()}`);
+                actions.push([varName, action, varValue, i, line]);
             }
         }
         h3d.on("render.before", obj._behaviorFunc = () => {
@@ -439,11 +466,9 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
                     // noinspection JSUnusedLocalSymbols
                     const {
                         sin, cos, tan, asin, acos, atan, atan2, sqrt, pow, abs, log, log2, log10, exp, min, max,
-                        floor, ceil, round, sign, PI, LN2, E, cosh, cbrt, imul, sinh, LN10, acosh, tanh, asinh, atanh,
-                        hypot, clz32, expm1, fround, log1p, LOG2E, LOG10E, random, SQRT1_2, SQRT2, trunc
+                        floor, ceil, round, sign, LN2, E, cosh, cbrt, imul, sinh, LN10, acosh, tanh, asinh, atanh,
+                        hypot, clz32, expm1, fround, log1p, LOG2E, LOG10E, random, SQRT1_2, SQRT2, trunc, PI: pi
                     } = Math;
-                    // noinspection JSUnusedLocalSymbols
-                    const pi = PI;
                     exports.html3d._eval(variables[action[0]] + action[1] + action[2], {object: obj});
                 } catch (e) {
                     actions = actions.filter(a => a !== action);
@@ -962,8 +987,8 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
         },
         ConvexGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
-            await loadLibrary(_ => THREE.ConvexHull, "ConvexHull", "https://threejs.org/examples/js/math/ConvexHull.js");
-            await loadLibrary(_ => THREE.ConvexGeometry, "ConvexGeometry", "https://threejs.org/examples/js/geometries/ConvexGeometry.js");
+            await loadLibrary(_ => THREE.ConvexHull, "ConvexHull", URLS.ConvexHull); // "/examples/js/math/ConvexHull.js"
+            await loadLibrary(_ => THREE.ConvexGeometry, "ConvexGeometry", URLS.ConvexGeometry); // "/examples/js/geometries/ConvexGeometry.js"
             const points1 = Array.from(element.children).filter(i => i.tagName === "POINT").map(i => new THREE.Vector3(numberCheck(i.getAttribute("x"), 0), numberCheck(i.getAttribute("y"), 0), numberCheck(i.getAttribute("z"), 0)));
             const geometry = new THREE.ConvexGeometry(points1);
             applyAttributes.ConvexGeometry(geometry, attr);
@@ -972,7 +997,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
         },
         TextGeometry: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
-            await loadLibrary(_ => !THREE.TextGeometry.toString().includes("console.error"), "TextGeometry", "https://threejs.org/examples/js/geometries/TextGeometry.js");
+            await loadLibrary(_ => !THREE.TextGeometry.toString().includes("console.error"), "TextGeometry", URLS.TextGeometry); // "/examples/js/geometries/TextGeometry.js"
             const font = h3d.fonts.find(i => [i.name, i.src].includes(stringCheck(attr("font")))) || h3d.fonts.find(i => i.familyName === stringCheck(attr("font")));
             if (!font) return console.warn("Font not found: " + stringCheck(attr("font")));
             element.style.display = "none";
@@ -1113,7 +1138,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
         },
         OrbitControls: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
-            await loadLibrary(_ => THREE.OrbitControls, "OrbitControls", "https://threejs.org/examples/js/controls/OrbitControls.js");
+            await loadLibrary(_ => THREE.OrbitControls, "OrbitControls", URLS.OrbitControls); // "/examples/js/controls/OrbitControls.js"
             const orbitControls = new THREE.OrbitControls(h3d.camera, h3d.renderer.domElement);
             applyAttributes.OrbitControls(orbitControls, attr);
             h3d.orbitControls.push(orbitControls);
@@ -1122,7 +1147,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
         },
         ArcballControls: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
-            await loadLibrary(_ => THREE.ArcballControls, "ArcballControls", "https://threejs.org/examples/js/controls/ArcballControls.js");
+            await loadLibrary(_ => THREE.ArcballControls, "ArcballControls", URLS.ArcballControls); // "/examples/js/controls/ArcballControls.js"
             const arcballControls = new THREE.ArcballControls(h3d.camera, h3d.renderer.domElement);
             applyAttributes.ArcballControls(arcballControls, attr);
             h3d.arcballControls.push(arcballControls);
@@ -1131,7 +1156,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
         },
         FlyControls: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
-            await loadLibrary(_ => THREE.FlyControls, "FlyControls", "https://threejs.org/examples/js/controls/FlyControls.js");
+            await loadLibrary(_ => THREE.FlyControls, "FlyControls", URLS.FlyControls); // "/examples/js/controls/FlyControls.js"
             const flyControls = new THREE.FlyControls(h3d.camera, h3d.renderer.domElement);
             applyAttributes.FlyControls(flyControls, attr);
             h3d.flyControls.push(flyControls);
@@ -1140,7 +1165,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
         },
         FirstPersonControls: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
-            await loadLibrary(_ => THREE.FirstPersonControls, "FirstPersonControls", "https://threejs.org/examples/js/controls/FirstPersonControls.js");
+            await loadLibrary(_ => THREE.FirstPersonControls, "FirstPersonControls", URLS.FirstPersonControls); // "/examples/js/controls/FirstPersonControls.js"
             const firstPersonControls = new THREE.FirstPersonControls(h3d.camera, h3d.renderer.domElement);
             applyAttributes.FirstPersonControls(firstPersonControls, attr);
             h3d.firstPersonControls.push(firstPersonControls);
@@ -1149,7 +1174,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
         },
         PointerLockControls: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
-            await loadLibrary(_ => THREE.PointerLockControls, "PointerLockControls", "https://threejs.org/examples/js/controls/PointerLockControls.js");
+            await loadLibrary(_ => THREE.PointerLockControls, "PointerLockControls", URLS.PointerLockControls); // "/examples/js/controls/PointerLockControls.js"
             const pointerLockControls = new THREE.PointerLockControls(h3d.camera, h3d.renderer.domElement);
             applyAttributes.PointerLockControls(pointerLockControls, attr);
             pointerLockControls.connect();
@@ -1159,7 +1184,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
         },
         TrackballControls: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
-            await loadLibrary(_ => THREE.TrackballControls, "TrackballControls", "https://threejs.org/examples/js/controls/TrackballControls.js");
+            await loadLibrary(_ => THREE.TrackballControls, "TrackballControls", URLS.TrackballControls); // "/examples/js/controls/TrackballControls.js"
             const trackballControls = new THREE.TrackballControls(h3d.camera, h3d.renderer.domElement);
             applyAttributes.TrackballControls(trackballControls, attr);
             h3d.trackballControls.push(trackballControls);
@@ -1169,7 +1194,7 @@ const _eval2 = (code, ___args___) => eval(`${Object.keys(___args___).map(_ => `c
         Font: async (h3d, element, assign = true, scene = h3d.scene) => {
             const attr = s => element.getAttribute(s);
             if (!fontLoader) {
-                await loadLibrary(_ => THREE.FontLoader.prototype.load, "FontLoader", "https://threejs.org/examples/js/loaders/FontLoader.js")
+                await loadLibrary(_ => THREE.FontLoader.prototype.load, "FontLoader", URLS.FontLoader) // "/examples/js/loaders/FontLoader.js"
                 fontLoader = new THREE.FontLoader();
             }
             const font = await new Promise(r => fontLoader.load(attr("src"), r, _ => _, _ => r(null)));

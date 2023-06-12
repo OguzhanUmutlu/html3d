@@ -1,0 +1,13 @@
+{
+  "label": "HTML3D",
+  "href": "./pages/main.md",
+  "markdown": true,
+  "pages": [
+    {
+      "label": "Installation",
+      "id": "installation",
+      "href": "./pages/installation.md",
+      "markdown": true
+    }
+  ]
+}
